@@ -1,0 +1,43 @@
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Private knowledge-base documents
+data/private/*
+!data/private/.gitkeep
+*.pdf
+
+# Generated outputs
+logs/*
+!logs/.gitkeep
+outputs/*
+!outputs/.gitkeep
+evaluation/reports/*
+!evaluation/reports/.gitkeep
+
+# Coverage
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# Operating system
+.DS_Store
+Thumbs.db
+
+# Supabase temporary files
+supabase/.branches/
+supabase/.temp/

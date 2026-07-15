@@ -1,0 +1,5 @@
+{"query": "Summarize the financial performance for the past year", "criteria": ["accuracy", "completeness", "clarity"], "expected_topics": ["revenue", "profit", "growth", "challenges"]}
+{"query": "Compare the current year's performance with the previous year", "criteria": ["accuracy", "completeness", "clarity"], "expected_topics": ["year-over-year comparison", "growth rates", "key differences"]}
+{"query": "What are the key recommendations from the audit report?", "criteria": ["accuracy", "completeness", "clarity"], "expected_topics": ["audit findings", "recommendations", "action items"]}
+{"query": "Explain the company's approach to risk management", "criteria": ["accuracy", "completeness", "clarity"], "expected_topics": ["risk framework", "mitigation strategies", "governance"]}
+{"query": "What are the projected trends for the next quarter?", "criteria": ["accuracy", "completeness", "clarity"], "expected_topics": ["forecasts", "market trends", "expectations"]}

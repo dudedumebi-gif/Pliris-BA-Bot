@@ -1,0 +1,40 @@
+[
+  {
+    "id": "chunk-001",
+    "text": "The company reported total revenue of $125.3 million for Q1 2024, representing a 15% increase year-over-year.",
+    "source": "Q1 2024 Financial Results",
+    "title": "Quarterly Report",
+    "page": 5,
+    "chunk_index": 0,
+    "metadata": {
+      "quarter": "Q1",
+      "year": 2024,
+      "category": "financial"
+    }
+  },
+  {
+    "id": "chunk-002",
+    "text": "Operating expenses increased by 8% due to investments in technology and expansion into new markets.",
+    "source": "Q1 2024 Financial Results",
+    "title": "Quarterly Report",
+    "page": 6,
+    "chunk_index": 1,
+    "metadata": {
+      "quarter": "Q1",
+      "year": 2024,
+      "category": "financial"
+    }
+  },
+  {
+    "id": "chunk-003",
+    "text": "The company maintains a hybrid work policy allowing employees to work remotely up to 3 days per week.",
+    "source": "Employee Handbook 2024",
+    "title": "HR Policy",
+    "page": 12,
+    "chunk_index": 0,
+    "metadata": {
+      "year": 2024,
+      "category": "hr"
+    }
+  }
+]
