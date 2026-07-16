@@ -65,8 +65,6 @@ class EventLogger:
         }
         return await self.repo.log_event("guardrail", event_data)
 
-    async def get_recent_events(
-        self, event_type: str | None = None, limit: int = 50
-    ) -> list[dict]:
+    async def get_recent_events(self, event_type: str | None = None, limit: int = 50) -> list[dict]:
         """Get recent events."""
         return await self.repo.get_events(event_type, limit)

@@ -15,9 +15,7 @@ class HybridSearch:
         self.semantic_weight = semantic_weight
         self.lexical_weight = lexical_weight
 
-    async def search(
-        self, query: str, top_k: int = 10, filters: dict | None = None
-    ) -> list[dict]:
+    async def search(self, query: str, top_k: int = 10, filters: dict | None = None) -> list[dict]:
         """
         Perform hybrid search combining semantic and lexical results.
 
@@ -55,7 +53,7 @@ class HybridSearch:
         score_map = {}
 
         # Add semantic scores
-        for i, result in enumerate(semantic_results):
+        for result in semantic_results:
             doc_id = result["id"]
             score_map[doc_id] = {
                 "result": result,
@@ -77,7 +75,7 @@ class HybridSearch:
 
         # Calculate combined scores
         combined_results = []
-        for doc_id, data in score_map.items():
+        for data in score_map.values():
             combined_score = (
                 self.semantic_weight * data["semantic_score"]
                 + self.lexical_weight * data["lexical_score"]

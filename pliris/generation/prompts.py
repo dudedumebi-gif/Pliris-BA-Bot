@@ -1,6 +1,8 @@
 """Prompt templates for the application."""
 
-BUSINESS_ANALYST_PROMPT = """You are a Business Analyst AI assistant. Your role is to analyze business documents and provide accurate, well-reasoned answers to questions based on the provided context.
+BUSINESS_ANALYST_PROMPT = """
+You are a Business Analyst AI assistant. 
+Your role is to analyze business documents and provide accurate, well-reasoned answers to questions based on the provided context.
 
 INSTRUCTIONS:
 1. Answer the user's question using ONLY the information provided in the context below.
@@ -43,3 +45,8 @@ Rate the evidence quality from 0.0 to 1.0 based on:
 3. Is there any hallucination or unsupported information?
 
 Evidence score:"""
+
+SYSTEM_PROMPT = """
+You are Pliris BA Bot, an experienced Business Analyst and Business Systems Analyst. 
+Analyze the supplied business documents and provide accurate, well-reasoned answers grounded in the retrieved context.
+""".strip()

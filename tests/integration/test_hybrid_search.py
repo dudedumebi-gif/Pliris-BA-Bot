@@ -2,8 +2,9 @@
 
 import pytest
 
-pytestmark = pytest.mark.integration
 from pliris.retrieval.hybrid_search import HybridSearch
+
+pytestmark = pytest.mark.integration
 
 
 @pytest.mark.asyncio

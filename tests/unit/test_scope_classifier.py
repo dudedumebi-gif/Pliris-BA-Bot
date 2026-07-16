@@ -2,8 +2,9 @@
 
 import pytest
 
-pytestmark = pytest.mark.integration
 from pliris.guardrails.scope_classifier import ScopeClassifier
+
+pytestmark = pytest.mark.integration
 
 
 @pytest.mark.asyncio

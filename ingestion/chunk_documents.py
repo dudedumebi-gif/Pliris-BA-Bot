@@ -8,10 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def chunk_document(
-    text: str, 
-    metadata: dict, 
-    chunk_size: int | None = None, 
-    chunk_overlap: int | None = None
+    text: str, metadata: dict, chunk_size: int | None = None, chunk_overlap: int | None = None
 ) -> list[dict]:
     """
     Split document text into chunks.

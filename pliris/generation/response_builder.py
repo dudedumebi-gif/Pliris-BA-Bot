@@ -50,7 +50,9 @@ class ResponseBuilder:
 
         formatted = content
         for i, citation in enumerate(citations, 1):
-            formatted += f"\n\n[{i}] {citation.get('title', 'Unknown')} - {citation.get('source', 'Unknown')}"
+            title = citation.get("title", "Unknown")
+            source = citation.get("source", "Unknown")
+            formatted += f"\n\n[{i}] {title} - {source}"
 
         return formatted
 
@@ -66,7 +68,10 @@ class ResponseBuilder:
             Content with disclaimer if needed
         """
         if confidence < 0.5:
-            disclaimer = "\n\n⚠️ Note: This response is based on limited information. Please verify with additional sources."
+            disclaimer = (
+                "\n\n⚠️ Note: This response is based on limited information. "
+                "Please verify with additional sources."
+            )
             return content + disclaimer
 
         return content

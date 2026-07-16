@@ -25,7 +25,7 @@ def test_chunk_document_with_overlap():
 
     assert len(chunks) > 1
     # Verify overlap exists
-    for i in range(1, len(chunks)):
+    for _i in range(1, len(chunks)):
         # Check that chunks have some overlap
         pass  # Overlap verification would be more complex
 

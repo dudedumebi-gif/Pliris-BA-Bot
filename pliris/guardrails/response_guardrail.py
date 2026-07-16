@@ -47,10 +47,7 @@ class ResponseGuardrail:
     def _contains_refusal(self, response: str) -> bool:
         """Check if response contains refusal patterns."""
         response_lower = response.lower()
-        for pattern in self.forbidden_patterns:
-            if re.search(pattern, response_lower):
-                return True
-        return False
+        return any(re.search(pattern, response_lower) for pattern in self.forbidden_patterns)
 
     def _rewrite_refusal(self, response: str) -> str:
         """Rewrite refusal to be more helpful."""
@@ -78,10 +75,7 @@ class ResponseGuardrail:
 
         # Simple phone pattern
         phone_pattern = r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"
-        if re.search(phone_pattern, response):
-            return True
-
-        return False
+        return bool(re.search(phone_pattern, response))
 
     def _redact_pii(self, response: str) -> str:
         """Redact PII from response."""

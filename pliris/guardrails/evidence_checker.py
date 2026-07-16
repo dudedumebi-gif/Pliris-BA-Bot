@@ -66,7 +66,8 @@ class EvidenceChecker:
             if match:
                 score = float(match.group(1))
                 return min(max(score, 0.0), 1.0)
-        except:
-            pass
+
+        except (AttributeError, TypeError, ValueError):
+            return 0.0
 
         return 0.5

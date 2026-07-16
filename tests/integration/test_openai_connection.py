@@ -2,8 +2,9 @@
 
 import pytest
 
-pytestmark = pytest.mark.integration
 from pliris.generation.openai_client import OpenAIClient
+
+pytestmark = pytest.mark.integration
 
 
 @pytest.mark.asyncio

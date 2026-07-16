@@ -13,9 +13,7 @@ class SemanticSearch:
         self.embedding_client = OpenAIClient()
         self.supabase = get_client()
 
-    async def search(
-        self, query: str, top_k: int = 10, filters: dict | None = None
-    ) -> list[dict]:
+    async def search(self, query: str, top_k: int = 10, filters: dict | None = None) -> list[dict]:
         """
         Perform semantic search using vector similarity.
 

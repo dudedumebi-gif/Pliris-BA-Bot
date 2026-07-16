@@ -31,7 +31,9 @@ class QueryRewriter:
             context = self._build_context(conversation_history)
 
             # Create rewrite prompt
-            prompt = f"""You are a query rewriting assistant. Rewrite the following user query to make it more specific and better suited for document retrieval.
+            prompt = f"""
+            You are a query rewriting assistant. 
+            Rewrite the following user query to make it more specific and better suited for document retrieval.
 
 Conversation context:
 {context}
