@@ -33,8 +33,8 @@ def clean_document_text(text: str) -> str:
     text = text.replace(""", "'").replace(""", "'")
 
     # Normalize dashes
-    text = re.sub(r"–", "-", text)
-    text = re.sub(r"—", "--", text)
+    text = re.sub(r"\u2013", "-", text)
+    text = re.sub(r"\u2014", "--", text)
 
     # Remove empty lines
     text = re.sub(r"\n\s*\n", "\n\n", text)

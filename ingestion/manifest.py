@@ -72,11 +72,9 @@ async def update_manifest(document_data: dict) -> bool:
     try:
         manifest = load_manifest()
 
-        # Check if document already exists
-        document_id = document_data.get("id")
-        if document_data.get("title"):
-            # Use title as ID if not provided
-            document_id = document_data["title"]
+        # Ensure document has an ID
+        if document_data.get("title") and not document_data.get("id"):
+            document_data["id"] = document_data["title"]
 
         # Update or add document
         documents = manifest.get("documents", [])

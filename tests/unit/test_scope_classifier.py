@@ -15,7 +15,12 @@ async def test_classify_business_query():
     result = await classifier.classify("What were the Q1 revenue figures?")
 
     assert result["in_scope"] is True
-    assert result["category"] in ["business_analysis", "financial", "general"]
+    assert result["category"] in [
+        "business_analysis",
+        "financial",
+        "business_systems_analysis",
+        "project_management",
+    ]
 
 
 @pytest.mark.asyncio

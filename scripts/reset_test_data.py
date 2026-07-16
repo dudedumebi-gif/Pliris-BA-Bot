@@ -33,14 +33,6 @@ async def main():
 
         # Re-run seed data
         print("\nRe-seeding test data...")
-        from pathlib import Path
-
-        seed_path = Path(__file__).parent.parent / "supabase" / "seed.sql"
-
-        # if seed_path.exists():
-        # Read and execute seed SQL
-        # with open(seed_path) as f:
-        #  seed_sql = f.read()
 
         # This would need to be executed via the database connection
         # For now, we'll just note it

@@ -20,11 +20,11 @@ async def get_sources():
 
         return documents
 
-    except Exception as e:
-        logger.error(f"Error fetching sources: {e}", exc_info=True)
+    except Exception as exc:
+        logger.error(f"Error fetching sources: {exc}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch sources"
-        )
+        ) from exc
 
 
 @router.get("/stats")
@@ -40,12 +40,12 @@ async def get_source_stats():
 
         return stats
 
-    except Exception as e:
-        logger.error(f"Error fetching source stats: {e}", exc_info=True)
+    except Exception as exc:
+        logger.error(f"Error fetching source stats: {exc}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch source statistics",
-        )
+        ) from exc
 
 
 @router.post("/upload")
