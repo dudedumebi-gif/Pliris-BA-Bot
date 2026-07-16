@@ -1,35 +1,18 @@
-# Corpus Manifest
-# This file tracks all documents in the knowledge base
-
+version: 1
 documents:
-  - title: Annual Report 2024
-    source: Finance Department
-    type: report
-    file_path: data/sample/annual_report_2024.pdf
-    storage_path: documents/annual_report_2024.pdf
-    status: indexed
-    chunk_count: 45
-    tags:
-      - finance
-      - annual
-      - 2024
+  - document_id: babok-v3
+    title: A Guide to the Business Analysis Body of Knowledge
+    source_filename: BABOK_Guide_v3_Member.pdf
+    author: International Institute of Business Analysis
+    edition: Version 3
+    publication_year: 2015
+    source_type: book
+    access: private
+    include_in_public_repository: false
+    enabled: true
     metadata:
-      year: 2024
-      category: financial
-    indexed_at: "2024-01-15T00:00:00Z"
-
-  - title: Employee Handbook 2024
-    source: HR Department
-    type: policy
-    file_path: data/sample/employee_handbook_2024.pdf
-    storage_path: documents/employee_handbook_2024.pdf
-    status: indexed
-    chunk_count: 32
-    tags:
-      - hr
-      - policy
-      - 2024
-    metadata:
-      year: 2024
-      category: hr
-    indexed_at: "2024-01-15T00:00:00Z"
+      short_title: BABOK Guide v3
+      domain:
+        - business-analysis
+        - business-systems-analysis
+      notes: Private knowledge-base source. Do not commit the PDF to GitHub.

@@ -1,8 +1,8 @@
 import httpx
 import streamlit as st
-from app.components.feedback import render_feedback_form, render_feedback_summary
-from app.components.chat_message import render_feedback_buttons
 
+from app.components.chat_message import render_feedback_buttons
+from app.components.feedback import render_feedback_form, render_feedback_summary
 
 st.set_page_config(page_title="Feedback - Pliris BA Bot", page_icon="👍", layout="wide")
 

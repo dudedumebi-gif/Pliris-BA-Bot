@@ -32,15 +32,16 @@ class QueryRewriter:
 
             # Create rewrite prompt
             prompt = f"""
-            You are a query rewriting assistant. 
-            Rewrite the following user query to make it more specific and better suited for document retrieval.
+            You are a query rewriting assistant.
+            Rewrite the following user query to make it more specific and
+            better suited for document retrieval
 
-Conversation context:
-{context}
+            Conversation context:
+            {context}
 
-Original query: {query}
-
-Rewritten query (only the query, no explanation):"""
+            User query:
+            {query}
+            """
 
             # Generate rewritten query
             rewritten = await self.llm_client.generate(

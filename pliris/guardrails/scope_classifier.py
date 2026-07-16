@@ -11,7 +11,13 @@ class ScopeClassifier:
 
     def __init__(self):
         self.llm_client = OpenAIClient()
-        self.valid_categories = ["business_analysis", "financial", "general", "out_of_scope"]
+        self.valid_categories = [
+            "business_analysis",
+            "business_systems_analysis",
+            "project_management",
+            "financial",
+            "out_of_scope",
+        ]
 
     async def classify(self, query: str) -> dict:
         """
@@ -34,16 +40,21 @@ class ScopeClassifier:
             category = response.strip().lower()
 
             if category not in self.valid_categories:
-                logger.warning(f"Invalid category returned: {category}, defaulting to general")
-                category = "general"
+                logger.warning("Unexpected scope category returned: %s", category)
+                category = "out_of_scope"
 
-            in_scope = category != "out_of_scope"
+            in_scope_categories = {
+                "business_analysis",
+                "business_systems_analysis",
+                "project_management",
+                "financial",
+            }
+            in_scope = category in in_scope_categories
 
             logger.info(f"Query classified as: {category}, in_scope: {in_scope}")
 
             return {"category": category, "in_scope": in_scope}
 
-        except Exception as e:
-            logger.error(f"Error classifying query: {e}", exc_info=True)
-            # Default to in_scope on error
-            return {"category": "general", "in_scope": True}
+        except Exception as exc:
+            logger.exception("Scope classification failed")
+            raise RuntimeError("Unable to classify query scope") from exc

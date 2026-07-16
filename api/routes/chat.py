@@ -17,7 +17,13 @@ prompt_injection_detector = PromptInjectionDetector()
 
 @router.post("/", response_model=ChatResponse)
 async def chat(
-    request: ChatRequest, user: dict = Depends(lambda: {"id": "system", "name": "System User"})
+    request: ChatRequest,
+    user: dict = Depends(
+        lambda: {
+            "id": "system",
+            "name": "System User",
+        }
+    ),
 ):
     """
     Process a chat message and return a response with citations.
@@ -31,30 +37,42 @@ async def chat(
     6. Returns the response with metadata
     """
     try:
-        # Check for prompt injection
         if prompt_injection_detector.detect(request.message):
-            logger.warning(f"Prompt injection detected from user {user['id']}")
+            logger.warning(
+                "Prompt injection detected from user %s",
+                user["id"],
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Potential prompt injection detected",
             )
 
-        # Classify scope
         scope_result = await scope_classifier.classify(request.message)
 
         if not scope_result["in_scope"]:
-            logger.info(f"Query out of scope: {request.message}")
+            logger.info(
+                "Query out of scope: %s",
+                request.message,
+            )
+
+            out_of_scope_response = (
+                "Pliris BA Bot is designed to assist with Business Analysis, "
+                "Business Systems Analysis, and Project Management practices. "
+                "Please ask a question related to one of these areas."
+            )
+
             return ChatResponse(
-                response="I'm sorry, but that question is outside my scope of knowledge. I can help with business analysis questions based on the documents in my knowledge base.",
+                response=out_of_scope_response,
                 citations=[],
                 confidence=0.0,
                 scope=scope_result["category"],
                 conversation_id=request.conversation_id,
             )
 
-        # Process through orchestrator
         result = await orchestrator.process_query(
-            message=request.message, conversation_id=request.conversation_id, user_id=user["id"]
+            message=request.message,
+            conversation_id=request.conversation_id,
+            user_id=user["id"],
         )
 
         return ChatResponse(
@@ -68,7 +86,7 @@ async def chat(
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error(f"Error processing chat request: {exc}", exc_info=True)
+        logger.exception("Error processing chat request")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while processing your request",
@@ -77,9 +95,8 @@ async def chat(
 
 @router.post("/stream")
 async def chat_stream(request: ChatRequest):
-    """
-    Stream a chat response (for future implementation).
-    """
+    """Stream a chat response when streaming support is implemented."""
     raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Streaming not yet implemented"
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Streaming not yet implemented",
     )

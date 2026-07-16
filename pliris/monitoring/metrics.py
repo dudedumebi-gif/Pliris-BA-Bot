@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from pliris.database.repositories.monitoring import MonitoringRepository
 
@@ -15,16 +15,14 @@ class MetricsCollector:
     async def get_query_metrics(self, time_range: str) -> dict:
         """Get query-related metrics."""
         # Calculate time range
-        delta = self._parse_time_range(time_range)
-        start_time = datetime.now() - delta
+        self._parse_time_range(time_range)
 
         # Placeholder - implement with actual database queries
         return {"total": 0, "change": 0, "active_users": 0, "users_change": 0, "timeline": []}
 
     async def get_performance_metrics(self, time_range: str) -> dict:
         """Get performance-related metrics."""
-        delta = self._parse_time_range(time_range)
-        start_time = datetime.now() - delta
+        self._parse_time_range(time_range)
 
         # Placeholder - implement with actual database queries
         return {
