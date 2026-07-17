@@ -14,8 +14,7 @@ from pliris.retrieval.hosted_hybrid import HostedHybridRetriever
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Run hosted retrieval, assemble grounded context, "
-            "and generate a validated answer."
+            "Run hosted retrieval, assemble grounded context, and generate a validated answer."
         )
     )
     parser.add_argument("question")

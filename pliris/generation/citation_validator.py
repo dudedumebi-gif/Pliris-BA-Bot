@@ -11,7 +11,6 @@ from pliris.generation.grounded_models import (
     ResponseUsage,
 )
 
-
 _CITATION_TOKEN_PATTERN = re.compile(r"\[S[^\]]+\]")
 _EXACT_CITATION_PATTERN = re.compile(r"\[(S[1-9]\d*)\]")
 
@@ -39,48 +38,32 @@ class CitationValidator:
             )
 
         if not answer:
-            raise GroundedResponseValidationError(
-                "A grounded answer cannot be blank."
-            )
+            raise GroundedResponseValidationError("A grounded answer cannot be blank.")
         if not context.sources:
             raise GroundedResponseValidationError(
                 "A grounded answer cannot be returned without sources."
             )
 
         inline_ids = self._extract_inline_ids(answer)
-        declared_ids = self._normalize_declared_ids(
-            draft.citation_ids
-        )
-        available = {
-            source.citation_id: source
-            for source in context.sources
-        }
+        declared_ids = self._normalize_declared_ids(draft.citation_ids)
+        available = {source.citation_id: source for source in context.sources}
 
-        unknown_ids = sorted(
-            (set(inline_ids) | set(declared_ids))
-            - set(available)
-        )
+        unknown_ids = sorted((set(inline_ids) | set(declared_ids)) - set(available))
         if unknown_ids:
             raise GroundedResponseValidationError(
-                "Unknown citation identifiers: "
-                + ", ".join(unknown_ids)
+                "Unknown citation identifiers: " + ", ".join(unknown_ids)
             )
 
         if not inline_ids:
             raise GroundedResponseValidationError(
-                "A supported answer must contain at least one "
-                "inline citation."
+                "A supported answer must contain at least one inline citation."
             )
         if inline_ids != declared_ids:
             raise GroundedResponseValidationError(
-                "Declared citation identifiers must match their "
-                "first appearance in the answer."
+                "Declared citation identifiers must match their first appearance in the answer."
             )
 
-        citations = tuple(
-            available[citation_id]
-            for citation_id in declared_ids
-        )
+        citations = tuple(available[citation_id] for citation_id in declared_ids)
         return GroundedAnswer(
             answer=answer,
             citation_ids=tuple(declared_ids),
@@ -92,9 +75,7 @@ class CitationValidator:
             metadata={
                 "available_source_count": len(context.sources),
                 "context_truncated": context.truncated,
-                "context_character_count": (
-                    context.character_count
-                ),
+                "context_character_count": (context.character_count),
             },
         )
 
@@ -109,8 +90,7 @@ class CitationValidator:
     ) -> GroundedAnswer:
         if draft.answer.strip() != INSUFFICIENT_EVIDENCE_MESSAGE:
             raise GroundedResponseValidationError(
-                "Insufficient-evidence responses must use the "
-                "approved fallback message."
+                "Insufficient-evidence responses must use the approved fallback message."
             )
         if draft.citation_ids:
             raise GroundedResponseValidationError(
@@ -118,8 +98,7 @@ class CitationValidator:
             )
         if _CITATION_TOKEN_PATTERN.search(draft.answer):
             raise GroundedResponseValidationError(
-                "Insufficient-evidence responses cannot contain "
-                "inline citations."
+                "Insufficient-evidence responses cannot contain inline citations."
             )
 
         return GroundedAnswer(
@@ -133,9 +112,7 @@ class CitationValidator:
             metadata={
                 "available_source_count": len(context.sources),
                 "context_truncated": context.truncated,
-                "context_character_count": (
-                    context.character_count
-                ),
+                "context_character_count": (context.character_count),
             },
         )
 
@@ -158,9 +135,7 @@ class CitationValidator:
         for token in tokens:
             match = _EXACT_CITATION_PATTERN.fullmatch(token)
             if match is None:
-                raise GroundedResponseValidationError(
-                    f"Malformed citation token: {token}"
-                )
+                raise GroundedResponseValidationError(f"Malformed citation token: {token}")
             citation_id = match.group(1)
             if citation_id not in citation_ids:
                 citation_ids.append(citation_id)

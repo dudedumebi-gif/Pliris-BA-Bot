@@ -43,19 +43,14 @@ def context_with_source() -> AssembledContext:
             RetrievedChunk(
                 rank=1,
                 chunk_id="chunk-1",
-                text=(
-                    "Requirements traceability identifies and "
-                    "documents requirement lineage."
-                ),
+                text=("Requirements traceability identifies and documents requirement lineage."),
                 title="BABOK Guide",
                 source="babok-v3",
                 page_start=87,
                 page_end=91,
                 score=0.038,
                 document_id="doc-1",
-                metadata={
-                    "manifest_document_id": "babok-v3"
-                },
+                metadata={"manifest_document_id": "babok-v3"},
             )
         ]
     )
@@ -63,10 +58,8 @@ def context_with_source() -> AssembledContext:
 
 def settings() -> SimpleNamespace:
     return SimpleNamespace(
-        openai_model="gpt-5-mini",
-        openai_api_key=SimpleNamespace(
-            get_secret_value=lambda: "test-key"
-        ),
+        openai_chat_model="gpt-5-mini",
+        openai_api_key=SimpleNamespace(get_secret_value=lambda: "test-key"),
     )
 
 
@@ -78,10 +71,7 @@ async def test_generator_uses_responses_api_structured_output() -> None:
         status="completed",
         output_text=json.dumps(
             {
-                "answer": (
-                    "Requirements traceability records the "
-                    "lineage of requirements [S1]."
-                ),
+                "answer": ("Requirements traceability records the lineage of requirements [S1]."),
                 "citation_ids": ["S1"],
                 "insufficient_evidence": False,
             }
@@ -112,10 +102,7 @@ async def test_generator_uses_responses_api_structured_output() -> None:
     assert call["model"] == "gpt-5-mini"
     assert call["store"] is False
     assert call["max_output_tokens"] == 1_200
-    assert (
-        call["text"]["format"]["schema"]
-        == GROUNDED_RESPONSE_SCHEMA
-    )
+    assert call["text"]["format"]["schema"] == GROUNDED_RESPONSE_SCHEMA
     assert call["text"]["format"]["strict"] is True
     assert "[S1]" in call["input"]
 

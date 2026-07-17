@@ -5,10 +5,8 @@ from typing import Any
 
 from pliris.generation.context_assembler import ContextSource
 
-
 INSUFFICIENT_EVIDENCE_MESSAGE = (
-    "The available knowledge base does not contain enough evidence "
-    "to answer this question."
+    "The available knowledge base does not contain enough evidence to answer this question."
 )
 
 
@@ -52,9 +50,7 @@ class GroundedAnswer:
         return {
             "answer": self.answer,
             "citation_ids": list(self.citation_ids),
-            "citations": [
-                citation.to_dict() for citation in self.citations
-            ],
+            "citations": [citation.to_dict() for citation in self.citations],
             "insufficient_evidence": self.insufficient_evidence,
             "model": self.model,
             "response_id": self.response_id,

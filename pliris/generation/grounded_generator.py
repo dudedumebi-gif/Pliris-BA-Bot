@@ -14,7 +14,6 @@ from pliris.generation.grounded_models import (
     ResponseUsage,
 )
 
-
 GROUNDED_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -67,9 +66,7 @@ class GroundedResponseGenerator:
         max_output_tokens: int = 1_200,
     ) -> None:
         if max_output_tokens < 100:
-            raise ValueError(
-                "max_output_tokens must be at least 100."
-            )
+            raise ValueError("max_output_tokens must be at least 100.")
 
         if settings is None:
             from pliris.config.settings import get_settings
@@ -79,11 +76,7 @@ class GroundedResponseGenerator:
         if client is None:
             from openai import AsyncOpenAI
 
-            client = AsyncOpenAI(
-                api_key=(
-                    settings.openai_api_key.get_secret_value()
-                )
-            )
+            client = AsyncOpenAI(api_key=(settings.openai_api_key.get_secret_value()))
 
         self.client = client
         self.settings = settings
@@ -101,7 +94,7 @@ class GroundedResponseGenerator:
         if not normalized_question:
             raise ValueError("question must not be blank.")
 
-        selected_model = model or self.settings.openai_model
+        selected_model = model or self.settings.openai_chat_model
 
         if not context.sources:
             return self.validator.validate(
@@ -127,10 +120,7 @@ class GroundedResponseGenerator:
                 "format": {
                     "type": "json_schema",
                     "name": "pliris_grounded_answer",
-                    "description": (
-                        "A context-grounded answer with validated "
-                        "source identifiers."
-                    ),
+                    "description": ("A context-grounded answer with validated source identifiers."),
                     "strict": True,
                     "schema": GROUNDED_RESPONSE_SCHEMA,
                 }
@@ -141,33 +131,20 @@ class GroundedResponseGenerator:
 
         status = getattr(response, "status", None)
         if status not in (None, "completed"):
-            raise GroundedResponseError(
-                f"OpenAI response did not complete: {status!r}."
-            )
+            raise GroundedResponseError(f"OpenAI response did not complete: {status!r}.")
 
-        output_text = str(
-            getattr(response, "output_text", "") or ""
-        ).strip()
+        output_text = str(getattr(response, "output_text", "") or "").strip()
         if not output_text:
-            raise GroundedResponseError(
-                "OpenAI response contained no output text."
-            )
+            raise GroundedResponseError("OpenAI response contained no output text.")
 
         draft = self._parse_draft(output_text)
-        response_model = str(
-            getattr(response, "model", selected_model)
-            or selected_model
-        )
+        response_model = str(getattr(response, "model", selected_model) or selected_model)
         return self.validator.validate(
             draft,
             context,
             model=response_model,
-            response_id=self._optional_string(
-                getattr(response, "id", None)
-            ),
-            usage=self._extract_usage(
-                getattr(response, "usage", None)
-            ),
+            response_id=self._optional_string(getattr(response, "id", None)),
+            usage=self._extract_usage(getattr(response, "usage", None)),
         )
 
     @staticmethod
@@ -188,23 +165,17 @@ class GroundedResponseGenerator:
         try:
             payload = json.loads(output_text)
         except json.JSONDecodeError as exc:
-            raise GroundedResponseValidationError(
-                "OpenAI response was not valid JSON."
-            ) from exc
+            raise GroundedResponseValidationError("OpenAI response was not valid JSON.") from exc
 
         if not isinstance(payload, dict):
-            raise GroundedResponseValidationError(
-                "OpenAI response must be a JSON object."
-            )
+            raise GroundedResponseValidationError("OpenAI response must be a JSON object.")
 
         answer = payload.get("answer")
         citation_ids = payload.get("citation_ids")
         insufficient = payload.get("insufficient_evidence")
 
         if not isinstance(answer, str):
-            raise GroundedResponseValidationError(
-                "The answer field must be a string."
-            )
+            raise GroundedResponseValidationError("The answer field must be a string.")
         if not isinstance(citation_ids, list) or not all(
             isinstance(item, str) for item in citation_ids
         ):
@@ -225,15 +196,9 @@ class GroundedResponseGenerator:
     @classmethod
     def _extract_usage(cls, usage: Any) -> ResponseUsage:
         return ResponseUsage(
-            input_tokens=cls._optional_int(
-                cls._value(usage, "input_tokens")
-            ),
-            output_tokens=cls._optional_int(
-                cls._value(usage, "output_tokens")
-            ),
-            total_tokens=cls._optional_int(
-                cls._value(usage, "total_tokens")
-            ),
+            input_tokens=cls._optional_int(cls._value(usage, "input_tokens")),
+            output_tokens=cls._optional_int(cls._value(usage, "output_tokens")),
+            total_tokens=cls._optional_int(cls._value(usage, "total_tokens")),
         )
 
     @staticmethod
