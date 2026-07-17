@@ -41,3 +41,7 @@ Thumbs.db
 # Supabase temporary files
 supabase/.branches/
 supabase/.temp/
+
+#Audit package
+artifacts/layout_audit/*
+!artifacts/layout_audit/.gitkeep
