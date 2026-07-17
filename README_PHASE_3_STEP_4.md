@@ -213,3 +213,13 @@ A strong result should:
 If the reranker improves definitions but harms task-oriented questions, inspect
 the moved candidates before changing the model, candidate pool, or score
 blending.
+
+
+# Sentence Transformers evalution-only
+The rereranker was rejected for production, so sentence-transformers should not remain in the 
+main runtime dependencies.
+Run:
+```bash
+uv add --group evaluation "sentence-transformers==5.6.0"
+uv sync --group evaluation
+```
