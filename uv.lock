@@ -1650,6 +1650,7 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
     { name = "rank-bm25" },
+    { name = "sentence-transformers" },
     { name = "supabase" },
     { name = "tenacity" },
 ]
@@ -1704,6 +1705,7 @@ requires-dist = [
     { name = "pyyaml", marker = "extra == 'ingestion'", specifier = ">=6.0.2,<7.0.0" },
     { name = "rank-bm25", specifier = ">=0.2.2" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.12.0,<1.0.0" },
+    { name = "sentence-transformers", specifier = "==5.6.0" },
     { name = "sentence-transformers", marker = "extra == 'reranking'", specifier = ">=5.5.0,<6.0.0" },
     { name = "streamlit", marker = "extra == 'ui'", specifier = ">=1.58.0,<2.0.0" },
     { name = "supabase", specifier = ">=2.31.0,<3.0.0" },

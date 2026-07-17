@@ -45,3 +45,7 @@ supabase/.temp/
 #Audit package
 artifacts/layout_audit/*
 !artifacts/layout_audit/.gitkeep
+
+#Artifact Quality
+artifacts/retrieval_evaluation/*
+!artifacts/retrieval_evaluation/.gitkeep
