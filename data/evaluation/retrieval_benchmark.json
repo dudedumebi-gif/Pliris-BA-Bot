@@ -1,0 +1,310 @@
+{
+  "version": 2,
+  "name": "Pliris BABOK Retrieval Benchmark",
+  "document_id": "babok-v3",
+  "description": "Strict deterministic retrieval benchmark. Page-verified cases require both expected-page overlap and minimum concept coverage.",
+  "cases": [
+    {
+      "id": "business_analysis_definition",
+      "query": "What is business analysis?",
+      "expected_page_ranges": [
+        {
+          "start": 12,
+          "end": 14
+        }
+      ],
+      "required_term_groups": [
+        [
+          "practice of enabling change"
+        ],
+        [
+          "defining needs",
+          "needs"
+        ],
+        [
+          "deliver value",
+          "value to stakeholders"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "annotation_status": "page_verified"
+    },
+    {
+      "id": "requirements_traceability_definition",
+      "query": "What is requirements traceability?",
+      "expected_page_ranges": [
+        {
+          "start": 89,
+          "end": 93
+        },
+        {
+          "start": 460,
+          "end": 462
+        }
+      ],
+      "required_term_groups": [
+        [
+          "lineage",
+          "relationships between sets of requirements"
+        ],
+        [
+          "backward traceability",
+          "forward traceability"
+        ],
+        [
+          "change control",
+          "impact analysis",
+          "effects of change"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "annotation_status": "page_verified"
+    },
+    {
+      "id": "stakeholder_analysis",
+      "query": "How should a business analyst analyze stakeholders?",
+      "expected_page_ranges": [
+        {
+          "start": 41,
+          "end": 44
+        },
+        {
+          "start": 354,
+          "end": 356
+        }
+      ],
+      "required_term_groups": [
+        [
+          "stakeholder list",
+          "stakeholder lists"
+        ],
+        [
+          "stakeholder map",
+          "stakeholder maps"
+        ],
+        [
+          "persona",
+          "personas",
+          "brainstorming",
+          "interviews"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "annotation_status": "page_verified"
+    },
+    {
+      "id": "maintain_requirements",
+      "query": "Why and how should requirements be maintained?",
+      "expected_page_ranges": [
+        {
+          "start": 93,
+          "end": 96
+        }
+      ],
+      "required_term_groups": [
+        [
+          "retain requirement accuracy",
+          "accuracy and consistency"
+        ],
+        [
+          "requirements life cycle",
+          "life cycle"
+        ],
+        [
+          "reuse of requirements",
+          "reuse"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "annotation_status": "page_verified"
+    },
+    {
+      "id": "prioritize_requirements",
+      "query": "How should business analysts prioritize requirements?",
+      "expected_page_ranges": [
+        {
+          "start": 97,
+          "end": 101
+        }
+      ],
+      "required_term_groups": [
+        [
+          "value",
+          "benefit"
+        ],
+        [
+          "risk"
+        ],
+        [
+          "dependency",
+          "dependencies"
+        ],
+        [
+          "urgency",
+          "time sensitivity",
+          "priority",
+          "prioritize"
+        ],
+        [
+          "constraints",
+          "available resources"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "annotation_status": "page_verified"
+    },
+    {
+      "id": "requirements_validation",
+      "query": "What is requirements validation?",
+      "expected_page_ranges": [
+        {
+          "start": 153,
+          "end": 160
+        },
+        {
+          "start": 465,
+          "end": 469
+        }
+      ],
+      "required_term_groups": [
+        [
+          "expected benefits",
+          "deliver benefit",
+          "benefit to stakeholders"
+        ],
+        [
+          "solution scope"
+        ],
+        [
+          "business goals",
+          "objectives of the change",
+          "value"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "annotation_status": "page_verified"
+    },
+    {
+      "id": "requirements_verification",
+      "query": "What is requirements verification?",
+      "expected_page_ranges": [
+        {
+          "start": 151,
+          "end": 156
+        },
+        {
+          "start": 459,
+          "end": 462
+        }
+      ],
+      "required_term_groups": [
+        [
+          "defined correctly",
+          "correctly defined"
+        ],
+        [
+          "acceptable level of quality",
+          "quality standards",
+          "high-quality"
+        ],
+        [
+          "structured",
+          "sufficiently defined",
+          "ready for validation"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "annotation_status": "page_verified"
+    },
+    {
+      "id": "plan_business_analysis_approach",
+      "query": "What should be considered when planning the business analysis approach?",
+      "expected_page_ranges": [
+        {
+          "start": 34,
+          "end": 40
+        }
+      ],
+      "required_term_groups": [
+        [
+          "business analysis approach"
+        ],
+        [
+          "methodology",
+          "techniques",
+          "activities",
+          "deliverables"
+        ],
+        [
+          "stakeholders",
+          "timing",
+          "complexity"
+        ],
+        [
+          "risk",
+          "risks",
+          "goals of the change"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "annotation_status": "page_verified"
+    },
+    {
+      "id": "root_cause_analysis",
+      "query": "What is root cause analysis used for?",
+      "expected_page_ranges": [
+        {
+          "start": 60,
+          "end": 64
+        }
+      ],
+      "required_term_groups": [
+        [
+          "underlying cause",
+          "root cause"
+        ],
+        [
+          "failure",
+          "failures",
+          "difficulty",
+          "difficulties"
+        ],
+        [
+          "business analysis work",
+          "problem",
+          "issue"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "annotation_status": "page_verified"
+    },
+    {
+      "id": "solution_evaluation",
+      "query": "What is the purpose of solution evaluation?",
+      "expected_page_ranges": [
+        {
+          "start": 173,
+          "end": 178
+        }
+      ],
+      "required_term_groups": [
+        [
+          "solution performance",
+          "performance assessments"
+        ],
+        [
+          "value",
+          "benefits",
+          "value being delivered"
+        ],
+        [
+          "limitations",
+          "recommendations",
+          "recommend actions"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "annotation_status": "page_verified"
+    }
+  ]
+}
