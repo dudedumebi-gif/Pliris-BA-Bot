@@ -75,7 +75,7 @@ uv run pytest -m integration -q
 Expected results:
 
 ```text
-23 focused tests passed
+22 focused tests passed
 119 non-integration tests passed, 13 deselected
 13 integration tests passed, 119 deselected
 ```

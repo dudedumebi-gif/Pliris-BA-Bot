@@ -228,13 +228,14 @@ async def test_chat_preserves_exact_out_of_scope_response() -> None:
         in_scope=False,
         category="out_of_scope",
     )
+    request_classifier = FakeRequestClassifier()
 
     response = await chat(
         request=ChatRequest(message="Tell me a sports score."),
         user={"id": "system", "name": "System User"},
         orchestrator=orchestrator,
         scope_classifier=scope,
-        request_classifier=FakeRequestClassifier(),
+        request_classifier=request_classifier,
         prompt_injection_detector=FakeInjectionDetector(),
     )
 
@@ -250,11 +251,13 @@ async def test_chat_preserves_exact_out_of_scope_response() -> None:
     assert response.scope == "out_of_scope"
     assert response.metadata["guardrail"] == "out_of_scope"
     assert orchestrator.calls == []
+    assert request_classifier.messages == []
 
 
 @pytest.mark.asyncio
 async def test_chat_blocks_prompt_injection_before_scope_check() -> None:
     scope = FakeScopeClassifier()
+    request_classifier = FakeRequestClassifier()
 
     with pytest.raises(HTTPException) as error:
         await chat(
@@ -262,13 +265,14 @@ async def test_chat_blocks_prompt_injection_before_scope_check() -> None:
             user={"id": "user-1", "name": "Test User"},
             orchestrator=FakeOrchestrator(),
             scope_classifier=scope,
-            request_classifier=FakeRequestClassifier(),
+            request_classifier=request_classifier,
             prompt_injection_detector=FakeInjectionDetector(detected=True),
         )
 
     assert error.value.status_code == 400
     assert error.value.detail == ("Potential prompt injection detected")
     assert scope.messages == []
+    assert request_classifier.messages == []
 
 
 @pytest.mark.asyncio
