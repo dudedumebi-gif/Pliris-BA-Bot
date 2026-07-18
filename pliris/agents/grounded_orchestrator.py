@@ -116,10 +116,13 @@ class GroundedResponseOrchestrator:
         scope_status: str = "in_scope",
         scope_confidence: float | None = None,
         scope_category: str | None = None,
+        request_mode: str = "grounded_question",
     ) -> GroundedPipelineResult:
         normalized_message = message.strip()
         if not normalized_message:
             raise ValueError("message must not be blank.")
+
+        normalized_request_mode = request_mode.strip() or "grounded_question"
 
         total_started = perf_counter()
 
@@ -139,6 +142,7 @@ class GroundedResponseOrchestrator:
         answer = await self.generator.generate(
             question=normalized_message,
             context=context,
+            request_mode=normalized_request_mode,
         )
         generation_ms = self._elapsed_ms(generation_started)
 
@@ -153,6 +157,7 @@ class GroundedResponseOrchestrator:
         base_metadata: dict[str, Any] = {
             "user_id": user_id,
             "document_id": document_id,
+            "request_mode": normalized_request_mode,
             "retrieved_count": len(chunks),
             "context_source_count": len(context.sources),
             "context_character_count": context.character_count,

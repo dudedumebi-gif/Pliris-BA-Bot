@@ -87,11 +87,13 @@ class FakeGenerator:
         *,
         question: str,
         context: AssembledContext,
+        request_mode: str,
     ) -> GroundedAnswer:
         self.calls.append(
             {
                 "question": question,
                 "context": context,
+                "request_mode": request_mode,
             }
         )
 
@@ -165,6 +167,7 @@ async def test_pipeline_connects_production_components() -> None:
         conversation_id="conv-1",
         user_id="user-1",
         document_id="babok-v3",
+        request_mode="framework_comparison",
     )
 
     assert retriever.calls == [
@@ -175,6 +178,7 @@ async def test_pipeline_connects_production_components() -> None:
         }
     ]
     assert generator.calls[0]["question"] == ("What is requirements traceability?")
+    assert generator.calls[0]["request_mode"] == ("framework_comparison")
     assert "[S1]" in generator.calls[0]["context"].text
 
     assert result.response == "Grounded answer [S1]."
@@ -185,6 +189,7 @@ async def test_pipeline_connects_production_components() -> None:
     assert result.citations[0].page == 81
     assert result.usage["total_tokens"] == 120
     assert result.metadata["user_id"] == "user-1"
+    assert result.metadata["request_mode"] == ("framework_comparison")
     assert result.metadata["retrieved_count"] == 2
     assert result.metadata["persistence"] == {"status": "disabled"}
 
@@ -222,6 +227,7 @@ async def test_pipeline_persists_exchange_and_returns_session() -> None:
     assert exchange.selected_chunk_ids == frozenset({"chunk-1"})
     assert exchange.citations[0]["citation_id"] == "S1"
     assert exchange.metadata["retrieved_count"] == 1
+    assert exchange.metadata["request_mode"] == ("grounded_question")
 
 
 @pytest.mark.asyncio

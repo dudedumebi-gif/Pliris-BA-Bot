@@ -217,6 +217,7 @@ async def test_chat_routes_in_scope_query_to_grounded_pipeline() -> None:
             "scope_status": "in_scope",
             "scope_confidence": 0.77,
             "scope_category": "business_analysis",
+            "request_mode": "grounded_question",
         }
     ]
 

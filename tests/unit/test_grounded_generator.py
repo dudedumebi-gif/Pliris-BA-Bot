@@ -11,7 +11,9 @@ from pliris.generation.context_assembler import (
     ContextAssembler,
 )
 from pliris.generation.grounded_generator import (
+    FRAMEWORK_COMPARISON_INSTRUCTIONS,
     GROUNDED_RESPONSE_SCHEMA,
+    GROUNDED_SYSTEM_INSTRUCTIONS,
     GroundedResponseGenerator,
 )
 from pliris.generation.grounded_models import (
@@ -103,9 +105,43 @@ async def test_generator_uses_responses_api_structured_output() -> None:
     assert call["store"] is False
     assert call["max_output_tokens"] == 2_400
     assert call["reasoning"] == {"effort": "low"}
+    assert call["instructions"] == GROUNDED_SYSTEM_INSTRUCTIONS
     assert call["text"]["format"]["schema"] == GROUNDED_RESPONSE_SCHEMA
     assert call["text"]["format"]["strict"] is True
     assert "[S1]" in call["input"]
+
+
+@pytest.mark.asyncio
+async def test_generator_adds_framework_comparison_instructions() -> None:
+    response = SimpleNamespace(
+        id="resp-framework",
+        model="gpt-5-mini",
+        status="completed",
+        output_text=json.dumps(
+            {
+                "answer": ("The approaches share a traceability focus [S1]."),
+                "citation_ids": ["S1"],
+                "insufficient_evidence": False,
+            }
+        ),
+        usage={},
+    )
+    client = FakeClient(response)
+    generator = GroundedResponseGenerator(
+        client=client,
+        settings=settings(),
+    )
+
+    await generator.generate(
+        question="Compare two requirements approaches.",
+        context=context_with_source(),
+        request_mode="framework_comparison",
+    )
+
+    instructions = client.responses.calls[0]["instructions"]
+    assert GROUNDED_SYSTEM_INSTRUCTIONS in instructions
+    assert FRAMEWORK_COMPARISON_INSTRUCTIONS in instructions
+    assert "Do not declare an overall winner" in instructions
 
 
 @pytest.mark.asyncio

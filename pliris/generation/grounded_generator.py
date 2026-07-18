@@ -53,6 +53,24 @@ return this exact answer:
 {INSUFFICIENT_EVIDENCE_MESSAGE}
 """.strip()
 
+FRAMEWORK_COMPARISON_INSTRUCTIONS = """
+For framework-comparison requests, produce a balanced comparison using only
+the supplied knowledge-base evidence.
+
+When the evidence supports them, cover:
+- the comparison basis;
+- similarities;
+- differences;
+- suitable situations for each option;
+- limitations and trade-offs;
+- selection considerations.
+
+Do not invent a comparison dimension that the context does not support.
+Do not declare an overall winner unless the supplied evidence supports that
+conclusion. State clearly when evidence is insufficient for a requested
+comparison point. Continue to cite every substantive factual claim.
+""".strip()
+
 
 class GroundedResponseGenerator:
     """Generate and validate a context-only answer with the Responses API."""
@@ -88,6 +106,7 @@ class GroundedResponseGenerator:
         *,
         question: str,
         context: AssembledContext,
+        request_mode: str = "grounded_question",
         model: str | None = None,
     ) -> GroundedAnswer:
         normalized_question = question.strip()
@@ -111,7 +130,7 @@ class GroundedResponseGenerator:
 
         response = await self.client.responses.create(
             model=selected_model,
-            instructions=GROUNDED_SYSTEM_INSTRUCTIONS,
+            instructions=self._instructions_for_mode(request_mode),
             input=self._build_user_input(
                 normalized_question,
                 context,
@@ -157,6 +176,13 @@ class GroundedResponseGenerator:
             response_id=self._optional_string(getattr(response, "id", None)),
             usage=self._extract_usage(getattr(response, "usage", None)),
         )
+
+    @staticmethod
+    def _instructions_for_mode(request_mode: str) -> str:
+        normalized_mode = request_mode.strip()
+        if normalized_mode == "framework_comparison":
+            return f"{GROUNDED_SYSTEM_INSTRUCTIONS}\n\n{FRAMEWORK_COMPARISON_INSTRUCTIONS}"
+        return GROUNDED_SYSTEM_INSTRUCTIONS
 
     @staticmethod
     def _build_user_input(

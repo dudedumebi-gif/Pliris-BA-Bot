@@ -138,6 +138,7 @@ async def chat(
             scope_status="in_scope",
             scope_confidence=_scope_confidence(scope_result),
             scope_category=scope_result["category"],
+            request_mode=request_classification.mode.value,
         )
         result_data = result.to_dict()
 
