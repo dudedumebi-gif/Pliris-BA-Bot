@@ -1,41 +1,87 @@
+from __future__ import annotations
+
 import logging
+from functools import lru_cache
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from api.schemas.chat import ChatRequest, ChatResponse
-from pliris.agents.orchestrator import AgentOrchestrator
+from pliris.agents.grounded_orchestrator import (
+    GroundedResponseOrchestrator,
+)
 from pliris.guardrails.prompt_injection import PromptInjectionDetector
 from pliris.guardrails.scope_classifier import ScopeClassifier
 
 logger = logging.getLogger(__name__)
 
+OUT_OF_SCOPE_RESPONSE = (
+    "Pliris BA Bot is designed to assist with Business Analysis, "
+    "Business Systems Analysis, and Project Management practices. "
+    "Please ask a question related to one of these areas."
+)
+
 router = APIRouter()
-orchestrator = AgentOrchestrator()
-scope_classifier = ScopeClassifier()
-prompt_injection_detector = PromptInjectionDetector()
+
+
+@lru_cache
+def get_grounded_orchestrator() -> GroundedResponseOrchestrator:
+    """Return the production grounded response pipeline."""
+
+    return GroundedResponseOrchestrator()
+
+
+@lru_cache
+def get_scope_classifier() -> ScopeClassifier:
+    """Return the configured query scope classifier."""
+
+    return ScopeClassifier()
+
+
+@lru_cache
+def get_prompt_injection_detector() -> PromptInjectionDetector:
+    """Return the prompt-injection detector."""
+
+    return PromptInjectionDetector()
+
+
+def get_system_user() -> dict[str, str]:
+    """Return the current application user until authentication is added."""
+
+    return {
+        "id": "system",
+        "name": "System User",
+    }
+
+
+UserDependency = Annotated[
+    dict[str, str],
+    Depends(get_system_user),
+]
+OrchestratorDependency = Annotated[
+    GroundedResponseOrchestrator,
+    Depends(get_grounded_orchestrator),
+]
+ScopeClassifierDependency = Annotated[
+    ScopeClassifier,
+    Depends(get_scope_classifier),
+]
+InjectionDetectorDependency = Annotated[
+    PromptInjectionDetector,
+    Depends(get_prompt_injection_detector),
+]
 
 
 @router.post("/", response_model=ChatResponse)
 async def chat(
     request: ChatRequest,
-    user: dict = Depends(
-        lambda: {
-            "id": "system",
-            "name": "System User",
-        }
-    ),
-):
-    """
-    Process a chat message and return a response with citations.
+    user: UserDependency,
+    orchestrator: OrchestratorDependency,
+    scope_classifier: ScopeClassifierDependency,
+    prompt_injection_detector: InjectionDetectorDependency,
+) -> ChatResponse:
+    """Process a user message through the guarded grounded pipeline."""
 
-    This endpoint:
-    1. Validates the request
-    2. Checks for prompt injection
-    3. Classifies the query scope
-    4. Retrieves relevant documents
-    5. Generates a response with citations
-    6. Returns the response with metadata
-    """
     try:
         if prompt_injection_detector.detect(request.message):
             logger.warning(
@@ -51,36 +97,42 @@ async def chat(
 
         if not scope_result["in_scope"]:
             logger.info(
-                "Query out of scope: %s",
+                "Query classified out of scope: %s",
                 request.message,
             )
-
-            out_of_scope_response = (
-                "Pliris BA Bot is designed to assist with Business Analysis, "
-                "Business Systems Analysis, and Project Management practices. "
-                "Please ask a question related to one of these areas."
-            )
-
             return ChatResponse(
-                response=out_of_scope_response,
+                response=OUT_OF_SCOPE_RESPONSE,
                 citations=[],
                 confidence=0.0,
                 scope=scope_result["category"],
                 conversation_id=request.conversation_id,
+                metadata={
+                    "insufficient_evidence": False,
+                    "guardrail": "out_of_scope",
+                },
             )
 
         result = await orchestrator.process_query(
             message=request.message,
             conversation_id=request.conversation_id,
             user_id=user["id"],
+            document_id=_document_id(request.context),
         )
+        result_data = result.to_dict()
 
         return ChatResponse(
-            response=result["response"],
-            citations=result.get("citations", []),
-            confidence=result.get("confidence", 0.0),
+            response=result_data["response"],
+            citations=result_data["citations"],
+            confidence=result_data["confidence"],
             scope=scope_result["category"],
-            conversation_id=result.get("conversation_id"),
+            conversation_id=result_data["conversation_id"],
+            metadata={
+                "insufficient_evidence": result_data["insufficient_evidence"],
+                "model": result_data["model"],
+                "response_id": result_data["response_id"],
+                "usage": result_data["usage"],
+                **result_data["metadata"],
+            },
         )
 
     except HTTPException:
@@ -94,9 +146,23 @@ async def chat(
 
 
 @router.post("/stream")
-async def chat_stream(request: ChatRequest):
-    """Stream a chat response when streaming support is implemented."""
+async def chat_stream(request: ChatRequest) -> None:
+    """Return not implemented until streaming support is added."""
+
+    del request
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail="Streaming not yet implemented",
     )
+
+
+def _document_id(context: dict[str, Any] | None) -> str | None:
+    if not context:
+        return None
+
+    value = context.get("document_id")
+    if not isinstance(value, str):
+        return None
+
+    normalized = value.strip()
+    return normalized or None
