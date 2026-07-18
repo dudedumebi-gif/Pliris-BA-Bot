@@ -16,6 +16,7 @@ from pliris.generation.grounded_generator import (
     GROUNDED_RESPONSE_SCHEMA,
     GROUNDED_SYSTEM_INSTRUCTIONS,
     SCENARIO_ANALYSIS_INSTRUCTIONS,
+    SOURCE_CONFLICT_REVIEW_INSTRUCTIONS,
     GroundedResponseGenerator,
 )
 from pliris.generation.grounded_models import (
@@ -56,6 +57,37 @@ def context_with_source() -> AssembledContext:
                 document_id="doc-1",
                 metadata={"manifest_document_id": "babok-v3"},
             )
+        ]
+    )
+
+
+def context_with_conflicting_sources() -> AssembledContext:
+    return ContextAssembler().assemble(
+        [
+            RetrievedChunk(
+                rank=1,
+                chunk_id="chunk-1",
+                text=("Source A recommends retaining an approved requirements baseline."),
+                title="Source A",
+                source="source-a",
+                page_start=10,
+                page_end=10,
+                score=0.041,
+                document_id="doc-1",
+                metadata={"manifest_document_id": "source-a"},
+            ),
+            RetrievedChunk(
+                rank=2,
+                chunk_id="chunk-2",
+                text=("Source B recommends replacing the approved requirements baseline."),
+                title="Source B",
+                source="source-b",
+                page_start=20,
+                page_end=20,
+                score=0.039,
+                document_id="doc-2",
+                metadata={"manifest_document_id": "source-b"},
+            ),
         ]
     )
 
@@ -217,6 +249,51 @@ async def test_generator_adds_deliverable_outline_instructions() -> None:
     assert "Do not invent names, owners, dates" in instructions
     normalized_instructions = " ".join(instructions.split())
     assert "Do not present the outline as a finished deliverable" in normalized_instructions
+
+
+@pytest.mark.asyncio
+async def test_generator_adds_source_conflict_review_instructions() -> None:
+    response = SimpleNamespace(
+        id="resp-conflict",
+        model="gpt-5-mini",
+        status="completed",
+        output_text=json.dumps(
+            {
+                "answer": (
+                    "Source A supports retaining the baseline [S1], "
+                    "while Source B supports replacing it [S2]. "
+                    "The available evidence does not resolve the "
+                    "conflict."
+                ),
+                "citation_ids": ["S1", "S2"],
+                "insufficient_evidence": False,
+            }
+        ),
+        usage={},
+    )
+    client = FakeClient(response)
+    generator = GroundedResponseGenerator(
+        client=client,
+        settings=settings(),
+    )
+
+    answer = await generator.generate(
+        question="Review the conflict between these sources.",
+        context=context_with_conflicting_sources(),
+        request_mode="source_conflict_review",
+    )
+
+    assert answer.citation_ids == ("S1", "S2")
+    instructions = client.responses.calls[0]["instructions"]
+    assert GROUNDED_SYSTEM_INSTRUCTIONS in instructions
+    assert SOURCE_CONFLICT_REVIEW_INSTRUCTIONS in instructions
+    assert FRAMEWORK_COMPARISON_INSTRUCTIONS not in instructions
+    assert SCENARIO_ANALYSIS_INSTRUCTIONS not in instructions
+    assert DELIVERABLE_OUTLINE_INSTRUCTIONS not in instructions
+    normalized_instructions = " ".join(instructions.split())
+    assert "Cite each source's position independently" in (normalized_instructions)
+    assert "Do not blend incompatible claims into a false consensus" in (normalized_instructions)
+    assert "state that the conflict remains unresolved" in (normalized_instructions)
 
 
 @pytest.mark.asyncio

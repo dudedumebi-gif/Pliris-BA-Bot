@@ -120,6 +120,30 @@ the outline as a finished deliverable. State when evidence is insufficient for
 a requested section or detail. Continue to cite every substantive factual claim.
 """.strip()
 
+SOURCE_CONFLICT_REVIEW_INSTRUCTIONS = """
+For source-conflict review requests, examine disagreements explicitly using
+only the supplied knowledge-base evidence.
+
+When supported, identify:
+- the exact claim, recommendation, rule, or decision point in dispute;
+- each source's position, presented separately;
+- points of agreement between the sources;
+- whether the difference is a direct contradiction or may result from
+  different scope, terminology, dates, versions, methods, assumptions, or
+  contexts;
+- source authority, recency, or applicability only when the supplied evidence
+  supports that comparison;
+- the practical impact of leaving the conflict unresolved;
+- additional evidence or validation needed to resolve it.
+
+Cite each source's position independently. Do not blend incompatible claims
+into a false consensus or omit a supported position. Do not select a winner,
+rank sources, or infer chronology, authority, applicability, or supersession
+unless the supplied evidence supports doing so. When the evidence can describe
+the disagreement but cannot settle it, state that the conflict remains
+unresolved. Continue to cite every substantive factual claim.
+""".strip()
+
 
 class GroundedResponseGenerator:
     """Generate and validate a context-only answer with the Responses API."""
@@ -235,6 +259,8 @@ class GroundedResponseGenerator:
             return f"{GROUNDED_SYSTEM_INSTRUCTIONS}\n\n{SCENARIO_ANALYSIS_INSTRUCTIONS}"
         if normalized_mode == "deliverable_outline":
             return f"{GROUNDED_SYSTEM_INSTRUCTIONS}\n\n{DELIVERABLE_OUTLINE_INSTRUCTIONS}"
+        if normalized_mode == "source_conflict_review":
+            return f"{GROUNDED_SYSTEM_INSTRUCTIONS}\n\n{SOURCE_CONFLICT_REVIEW_INSTRUCTIONS}"
         return GROUNDED_SYSTEM_INSTRUCTIONS
 
     @staticmethod
