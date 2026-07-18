@@ -97,6 +97,29 @@ mitigations, or preferred options that the supplied evidence does not support.
 Continue to cite every substantive factual claim.
 """.strip()
 
+DELIVERABLE_OUTLINE_INSTRUCTIONS = """
+For deliverable-outline requests, provide a practical structure for the
+requested artifact using only the supplied knowledge-base evidence and the
+constraints stated in the user question.
+
+When supported, identify:
+- the deliverable purpose and intended audience;
+- recommended sections in a logical order;
+- the expected content or question each section should address;
+- required source inputs and supporting evidence;
+- assumptions, dependencies, constraints, and exclusions;
+- review, validation, approval, or sign-off checkpoints;
+- traceability or quality checks;
+- unresolved questions and evidence gaps.
+
+Clearly distinguish evidence-backed requirements from suggested placeholders.
+Do not claim that a section or format is mandatory or standard unless the
+supplied evidence supports that claim. Do not invent names, owners, dates,
+figures, decisions, approvals, statuses, or completed analysis. Do not present
+the outline as a finished deliverable. State when evidence is insufficient for
+a requested section or detail. Continue to cite every substantive factual claim.
+""".strip()
+
 
 class GroundedResponseGenerator:
     """Generate and validate a context-only answer with the Responses API."""
@@ -210,6 +233,8 @@ class GroundedResponseGenerator:
             return f"{GROUNDED_SYSTEM_INSTRUCTIONS}\n\n{FRAMEWORK_COMPARISON_INSTRUCTIONS}"
         if normalized_mode == "scenario_analysis":
             return f"{GROUNDED_SYSTEM_INSTRUCTIONS}\n\n{SCENARIO_ANALYSIS_INSTRUCTIONS}"
+        if normalized_mode == "deliverable_outline":
+            return f"{GROUNDED_SYSTEM_INSTRUCTIONS}\n\n{DELIVERABLE_OUTLINE_INSTRUCTIONS}"
         return GROUNDED_SYSTEM_INSTRUCTIONS
 
     @staticmethod

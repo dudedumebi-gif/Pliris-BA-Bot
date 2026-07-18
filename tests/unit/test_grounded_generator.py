@@ -11,6 +11,7 @@ from pliris.generation.context_assembler import (
     ContextAssembler,
 )
 from pliris.generation.grounded_generator import (
+    DELIVERABLE_OUTLINE_INSTRUCTIONS,
     FRAMEWORK_COMPARISON_INSTRUCTIONS,
     GROUNDED_RESPONSE_SCHEMA,
     GROUNDED_SYSTEM_INSTRUCTIONS,
@@ -178,6 +179,44 @@ async def test_generator_adds_scenario_analysis_instructions() -> None:
     assert FRAMEWORK_COMPARISON_INSTRUCTIONS not in instructions
     assert "Do not present a hypothetical outcome" in instructions
     assert "Do not assign" in instructions
+
+
+@pytest.mark.asyncio
+async def test_generator_adds_deliverable_outline_instructions() -> None:
+    response = SimpleNamespace(
+        id="resp-outline",
+        model="gpt-5-mini",
+        status="completed",
+        output_text=json.dumps(
+            {
+                "answer": ("The outline should include a traceability section [S1]."),
+                "citation_ids": ["S1"],
+                "insufficient_evidence": False,
+            }
+        ),
+        usage={},
+    )
+    client = FakeClient(response)
+    generator = GroundedResponseGenerator(
+        client=client,
+        settings=settings(),
+    )
+
+    await generator.generate(
+        question="Outline a requirements traceability deliverable.",
+        context=context_with_source(),
+        request_mode="deliverable_outline",
+    )
+
+    instructions = client.responses.calls[0]["instructions"]
+    assert GROUNDED_SYSTEM_INSTRUCTIONS in instructions
+    assert DELIVERABLE_OUTLINE_INSTRUCTIONS in instructions
+    assert FRAMEWORK_COMPARISON_INSTRUCTIONS not in instructions
+    assert SCENARIO_ANALYSIS_INSTRUCTIONS not in instructions
+    assert "suggested placeholders" in instructions
+    assert "Do not invent names, owners, dates" in instructions
+    normalized_instructions = " ".join(instructions.split())
+    assert "Do not present the outline as a finished deliverable" in normalized_instructions
 
 
 @pytest.mark.asyncio
