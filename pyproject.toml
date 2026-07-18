@@ -11,6 +11,7 @@ authors = [
 dependencies = [
     "fastapi[standard]>=0.139.0,<1.0.0",
     "httpx>=0.28.1",
+    "httpx2>=2.7.0",
     "openai>=2.45.0,<3.0.0",
     "psycopg[binary,pool]>=3.3.4,<4.0.0",
     "pydantic>=2.11.0,<3.0.0",
