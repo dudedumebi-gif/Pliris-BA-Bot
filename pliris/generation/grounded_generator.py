@@ -71,6 +71,32 @@ conclusion. State clearly when evidence is insufficient for a requested
 comparison point. Continue to cite every substantive factual claim.
 """.strip()
 
+SCENARIO_ANALYSIS_INSTRUCTIONS = """
+For scenario-analysis requests, analyze the scenario conditionally and use
+only the supplied knowledge-base evidence.
+
+Clearly distinguish:
+- evidence-backed facts;
+- assumptions supplied in the user question;
+- conditional consequences that apply only if the scenario occurs;
+- uncertainties and missing evidence.
+
+When the evidence supports them, cover:
+- the scenario and material assumptions;
+- affected areas and stakeholders;
+- dependencies and constraints;
+- likely impacts;
+- risks and opportunities;
+- response options and trade-offs;
+- mitigations and decision considerations;
+- evidence gaps.
+
+Do not present a hypothetical outcome as an established fact. Do not assign
+probabilities, confidence levels, impacts, dependencies, stakeholders,
+mitigations, or preferred options that the supplied evidence does not support.
+Continue to cite every substantive factual claim.
+""".strip()
+
 
 class GroundedResponseGenerator:
     """Generate and validate a context-only answer with the Responses API."""
@@ -182,6 +208,8 @@ class GroundedResponseGenerator:
         normalized_mode = request_mode.strip()
         if normalized_mode == "framework_comparison":
             return f"{GROUNDED_SYSTEM_INSTRUCTIONS}\n\n{FRAMEWORK_COMPARISON_INSTRUCTIONS}"
+        if normalized_mode == "scenario_analysis":
+            return f"{GROUNDED_SYSTEM_INSTRUCTIONS}\n\n{SCENARIO_ANALYSIS_INSTRUCTIONS}"
         return GROUNDED_SYSTEM_INSTRUCTIONS
 
     @staticmethod

@@ -14,6 +14,7 @@ from pliris.generation.grounded_generator import (
     FRAMEWORK_COMPARISON_INSTRUCTIONS,
     GROUNDED_RESPONSE_SCHEMA,
     GROUNDED_SYSTEM_INSTRUCTIONS,
+    SCENARIO_ANALYSIS_INSTRUCTIONS,
     GroundedResponseGenerator,
 )
 from pliris.generation.grounded_models import (
@@ -142,6 +143,41 @@ async def test_generator_adds_framework_comparison_instructions() -> None:
     assert GROUNDED_SYSTEM_INSTRUCTIONS in instructions
     assert FRAMEWORK_COMPARISON_INSTRUCTIONS in instructions
     assert "Do not declare an overall winner" in instructions
+
+
+@pytest.mark.asyncio
+async def test_generator_adds_scenario_analysis_instructions() -> None:
+    response = SimpleNamespace(
+        id="resp-scenario",
+        model="gpt-5-mini",
+        status="completed",
+        output_text=json.dumps(
+            {
+                "answer": ("If the scenario occurs, traceability may be affected [S1]."),
+                "citation_ids": ["S1"],
+                "insufficient_evidence": False,
+            }
+        ),
+        usage={},
+    )
+    client = FakeClient(response)
+    generator = GroundedResponseGenerator(
+        client=client,
+        settings=settings(),
+    )
+
+    await generator.generate(
+        question=("What if a requirement changes after approval?"),
+        context=context_with_source(),
+        request_mode="scenario_analysis",
+    )
+
+    instructions = client.responses.calls[0]["instructions"]
+    assert GROUNDED_SYSTEM_INSTRUCTIONS in instructions
+    assert SCENARIO_ANALYSIS_INSTRUCTIONS in instructions
+    assert FRAMEWORK_COMPARISON_INSTRUCTIONS not in instructions
+    assert "Do not present a hypothetical outcome" in instructions
+    assert "Do not assign" in instructions
 
 
 @pytest.mark.asyncio
