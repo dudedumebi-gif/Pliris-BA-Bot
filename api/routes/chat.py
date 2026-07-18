@@ -10,6 +10,7 @@ from api.schemas.chat import ChatRequest, ChatResponse
 from pliris.agents.grounded_orchestrator import (
     GroundedResponseOrchestrator,
 )
+from pliris.agents.request_classifier import RequestClassifier
 from pliris.database.repositories.grounded_persistence import (
     GroundedPersistenceRepository,
 )
@@ -42,6 +43,13 @@ def get_scope_classifier() -> ScopeClassifier:
 
 
 @lru_cache
+def get_request_classifier() -> RequestClassifier:
+    """Return the deterministic request-mode classifier."""
+
+    return RequestClassifier()
+
+
+@lru_cache
 def get_prompt_injection_detector() -> PromptInjectionDetector:
     """Return the prompt-injection detector."""
 
@@ -69,6 +77,10 @@ ScopeClassifierDependency = Annotated[
     ScopeClassifier,
     Depends(get_scope_classifier),
 ]
+RequestClassifierDependency = Annotated[
+    RequestClassifier,
+    Depends(get_request_classifier),
+]
 InjectionDetectorDependency = Annotated[
     PromptInjectionDetector,
     Depends(get_prompt_injection_detector),
@@ -81,6 +93,7 @@ async def chat(
     user: UserDependency,
     orchestrator: OrchestratorDependency,
     scope_classifier: ScopeClassifierDependency,
+    request_classifier: RequestClassifierDependency,
     prompt_injection_detector: InjectionDetectorDependency,
 ) -> ChatResponse:
     """Process a user message through the guarded grounded pipeline."""
@@ -115,6 +128,8 @@ async def chat(
                 },
             )
 
+        request_classification = request_classifier.classify(request.message)
+
         result = await orchestrator.process_query(
             message=request.message,
             conversation_id=request.conversation_id,
@@ -123,6 +138,7 @@ async def chat(
             scope_status="in_scope",
             scope_confidence=_scope_confidence(scope_result),
             scope_category=scope_result["category"],
+            request_mode=request_classification.mode.value,
         )
         result_data = result.to_dict()
 
@@ -137,6 +153,9 @@ async def chat(
                 "model": result_data["model"],
                 "response_id": result_data["response_id"],
                 "usage": result_data["usage"],
+                "request_mode": request_classification.mode.value,
+                "request_mode_confidence": (request_classification.confidence),
+                "request_mode_rule": (request_classification.matched_rule),
                 **result_data["metadata"],
             },
         )

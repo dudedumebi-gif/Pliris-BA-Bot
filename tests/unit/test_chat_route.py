@@ -12,11 +12,16 @@ from api.routes.chat import (
     chat_stream,
     get_grounded_orchestrator,
     get_prompt_injection_detector,
+    get_request_classifier,
     get_scope_classifier,
     get_system_user,
     router,
 )
 from api.schemas.chat import ChatRequest
+from pliris.agents.request_classifier import (
+    RequestClassification,
+    RequestMode,
+)
 
 
 class FakeInjectionDetector:
@@ -56,6 +61,29 @@ class FakeScopeClassifier:
         if self.confidence is not None:
             result["confidence"] = self.confidence
         return result
+
+
+class FakeRequestClassifier:
+    def __init__(
+        self,
+        *,
+        mode: RequestMode = RequestMode.GROUNDED_QUESTION,
+        confidence: float = 0.60,
+        matched_rule: str = "test_rule",
+    ) -> None:
+        self.result = RequestClassification(
+            mode=mode,
+            confidence=confidence,
+            matched_rule=matched_rule,
+        )
+        self.messages: list[str] = []
+
+    def classify(
+        self,
+        message: str,
+    ) -> RequestClassification:
+        self.messages.append(message)
+        return self.result
 
 
 class FakePipelineResult:
@@ -165,6 +193,7 @@ async def test_chat_routes_in_scope_query_to_grounded_pipeline() -> None:
         user={"id": "user-1", "name": "Test User"},
         orchestrator=orchestrator,
         scope_classifier=scope,
+        request_classifier=FakeRequestClassifier(),
         prompt_injection_detector=detector,
     )
 
@@ -175,6 +204,9 @@ async def test_chat_routes_in_scope_query_to_grounded_pipeline() -> None:
     assert len(response.citations) == 1
     assert response.citations[0].citation_id == "S1"
     assert response.metadata["persistence"]["status"] == ("completed")
+    assert response.metadata["request_mode"] == "grounded_question"
+    assert response.metadata["request_mode_confidence"] == 0.60
+    assert response.metadata["request_mode_rule"] == "test_rule"
 
     assert orchestrator.calls == [
         {
@@ -185,6 +217,7 @@ async def test_chat_routes_in_scope_query_to_grounded_pipeline() -> None:
             "scope_status": "in_scope",
             "scope_confidence": 0.77,
             "scope_category": "business_analysis",
+            "request_mode": "grounded_question",
         }
     ]
 
@@ -196,12 +229,14 @@ async def test_chat_preserves_exact_out_of_scope_response() -> None:
         in_scope=False,
         category="out_of_scope",
     )
+    request_classifier = FakeRequestClassifier()
 
     response = await chat(
         request=ChatRequest(message="Tell me a sports score."),
         user={"id": "system", "name": "System User"},
         orchestrator=orchestrator,
         scope_classifier=scope,
+        request_classifier=request_classifier,
         prompt_injection_detector=FakeInjectionDetector(),
     )
 
@@ -217,11 +252,13 @@ async def test_chat_preserves_exact_out_of_scope_response() -> None:
     assert response.scope == "out_of_scope"
     assert response.metadata["guardrail"] == "out_of_scope"
     assert orchestrator.calls == []
+    assert request_classifier.messages == []
 
 
 @pytest.mark.asyncio
 async def test_chat_blocks_prompt_injection_before_scope_check() -> None:
     scope = FakeScopeClassifier()
+    request_classifier = FakeRequestClassifier()
 
     with pytest.raises(HTTPException) as error:
         await chat(
@@ -229,12 +266,14 @@ async def test_chat_blocks_prompt_injection_before_scope_check() -> None:
             user={"id": "user-1", "name": "Test User"},
             orchestrator=FakeOrchestrator(),
             scope_classifier=scope,
+            request_classifier=request_classifier,
             prompt_injection_detector=FakeInjectionDetector(detected=True),
         )
 
     assert error.value.status_code == 400
     assert error.value.detail == ("Potential prompt injection detected")
     assert scope.messages == []
+    assert request_classifier.messages == []
 
 
 @pytest.mark.asyncio
@@ -249,6 +288,7 @@ async def test_chat_returns_insufficient_evidence_metadata() -> None:
             )
         ),
         scope_classifier=FakeScopeClassifier(),
+        request_classifier=FakeRequestClassifier(),
         prompt_injection_detector=FakeInjectionDetector(),
     )
 
@@ -267,6 +307,7 @@ async def test_chat_converts_pipeline_failure_to_http_500() -> None:
             user={"id": "system", "name": "System User"},
             orchestrator=FakeOrchestrator(error=RuntimeError("pipeline failed")),
             scope_classifier=FakeScopeClassifier(),
+            request_classifier=FakeRequestClassifier(),
             prompt_injection_detector=FakeInjectionDetector(),
         )
 
@@ -288,6 +329,7 @@ def build_test_client(
     *,
     orchestrator: FakeOrchestrator,
     scope_classifier: FakeScopeClassifier,
+    request_classifier: FakeRequestClassifier,
     detector: FakeInjectionDetector,
 ) -> TestClient:
     app = FastAPI()
@@ -298,6 +340,7 @@ def build_test_client(
     }
     app.dependency_overrides[get_grounded_orchestrator] = lambda: orchestrator
     app.dependency_overrides[get_scope_classifier] = lambda: scope_classifier
+    app.dependency_overrides[get_request_classifier] = lambda: request_classifier
     app.dependency_overrides[get_prompt_injection_detector] = lambda: detector
     return TestClient(app)
 
@@ -307,6 +350,7 @@ def test_http_chat_serializes_grounded_response() -> None:
     client = build_test_client(
         orchestrator=orchestrator,
         scope_classifier=FakeScopeClassifier(),
+        request_classifier=FakeRequestClassifier(),
         detector=FakeInjectionDetector(),
     )
 
@@ -324,6 +368,9 @@ def test_http_chat_serializes_grounded_response() -> None:
     assert payload["response"].endswith("[S1].")
     assert payload["citations"][0]["chunk_id"] == "chunk-1"
     assert payload["metadata"]["usage"]["total_tokens"] == 120
+    assert payload["metadata"]["request_mode"] == "grounded_question"
+    assert payload["metadata"]["request_mode_confidence"] == 0.60
+    assert payload["metadata"]["request_mode_rule"] == "test_rule"
     assert payload["metadata"]["persistence"]["status"] == ("completed")
     assert orchestrator.calls[0]["user_id"] == "api-user"
 
@@ -335,6 +382,7 @@ def test_http_chat_preserves_out_of_scope_contract() -> None:
             in_scope=False,
             category="out_of_scope",
         ),
+        request_classifier=FakeRequestClassifier(),
         detector=FakeInjectionDetector(),
     )
 
@@ -354,6 +402,7 @@ def test_http_chat_rejects_prompt_injection() -> None:
     client = build_test_client(
         orchestrator=FakeOrchestrator(),
         scope_classifier=FakeScopeClassifier(),
+        request_classifier=FakeRequestClassifier(),
         detector=FakeInjectionDetector(detected=True),
     )
 

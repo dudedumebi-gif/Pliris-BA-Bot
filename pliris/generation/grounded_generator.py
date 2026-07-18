@@ -53,6 +53,97 @@ return this exact answer:
 {INSUFFICIENT_EVIDENCE_MESSAGE}
 """.strip()
 
+FRAMEWORK_COMPARISON_INSTRUCTIONS = """
+For framework-comparison requests, produce a balanced comparison using only
+the supplied knowledge-base evidence.
+
+When the evidence supports them, cover:
+- the comparison basis;
+- similarities;
+- differences;
+- suitable situations for each option;
+- limitations and trade-offs;
+- selection considerations.
+
+Do not invent a comparison dimension that the context does not support.
+Do not declare an overall winner unless the supplied evidence supports that
+conclusion. State clearly when evidence is insufficient for a requested
+comparison point. Continue to cite every substantive factual claim.
+""".strip()
+
+SCENARIO_ANALYSIS_INSTRUCTIONS = """
+For scenario-analysis requests, analyze the scenario conditionally and use
+only the supplied knowledge-base evidence.
+
+Clearly distinguish:
+- evidence-backed facts;
+- assumptions supplied in the user question;
+- conditional consequences that apply only if the scenario occurs;
+- uncertainties and missing evidence.
+
+When the evidence supports them, cover:
+- the scenario and material assumptions;
+- affected areas and stakeholders;
+- dependencies and constraints;
+- likely impacts;
+- risks and opportunities;
+- response options and trade-offs;
+- mitigations and decision considerations;
+- evidence gaps.
+
+Do not present a hypothetical outcome as an established fact. Do not assign
+probabilities, confidence levels, impacts, dependencies, stakeholders,
+mitigations, or preferred options that the supplied evidence does not support.
+Continue to cite every substantive factual claim.
+""".strip()
+
+DELIVERABLE_OUTLINE_INSTRUCTIONS = """
+For deliverable-outline requests, provide a practical structure for the
+requested artifact using only the supplied knowledge-base evidence and the
+constraints stated in the user question.
+
+When supported, identify:
+- the deliverable purpose and intended audience;
+- recommended sections in a logical order;
+- the expected content or question each section should address;
+- required source inputs and supporting evidence;
+- assumptions, dependencies, constraints, and exclusions;
+- review, validation, approval, or sign-off checkpoints;
+- traceability or quality checks;
+- unresolved questions and evidence gaps.
+
+Clearly distinguish evidence-backed requirements from suggested placeholders.
+Do not claim that a section or format is mandatory or standard unless the
+supplied evidence supports that claim. Do not invent names, owners, dates,
+figures, decisions, approvals, statuses, or completed analysis. Do not present
+the outline as a finished deliverable. State when evidence is insufficient for
+a requested section or detail. Continue to cite every substantive factual claim.
+""".strip()
+
+SOURCE_CONFLICT_REVIEW_INSTRUCTIONS = """
+For source-conflict review requests, examine disagreements explicitly using
+only the supplied knowledge-base evidence.
+
+When supported, identify:
+- the exact claim, recommendation, rule, or decision point in dispute;
+- each source's position, presented separately;
+- points of agreement between the sources;
+- whether the difference is a direct contradiction or may result from
+  different scope, terminology, dates, versions, methods, assumptions, or
+  contexts;
+- source authority, recency, or applicability only when the supplied evidence
+  supports that comparison;
+- the practical impact of leaving the conflict unresolved;
+- additional evidence or validation needed to resolve it.
+
+Cite each source's position independently. Do not blend incompatible claims
+into a false consensus or omit a supported position. Do not select a winner,
+rank sources, or infer chronology, authority, applicability, or supersession
+unless the supplied evidence supports doing so. When the evidence can describe
+the disagreement but cannot settle it, state that the conflict remains
+unresolved. Continue to cite every substantive factual claim.
+""".strip()
+
 
 class GroundedResponseGenerator:
     """Generate and validate a context-only answer with the Responses API."""
@@ -88,6 +179,7 @@ class GroundedResponseGenerator:
         *,
         question: str,
         context: AssembledContext,
+        request_mode: str = "grounded_question",
         model: str | None = None,
     ) -> GroundedAnswer:
         normalized_question = question.strip()
@@ -111,7 +203,7 @@ class GroundedResponseGenerator:
 
         response = await self.client.responses.create(
             model=selected_model,
-            instructions=GROUNDED_SYSTEM_INSTRUCTIONS,
+            instructions=self._instructions_for_mode(request_mode),
             input=self._build_user_input(
                 normalized_question,
                 context,
@@ -157,6 +249,19 @@ class GroundedResponseGenerator:
             response_id=self._optional_string(getattr(response, "id", None)),
             usage=self._extract_usage(getattr(response, "usage", None)),
         )
+
+    @staticmethod
+    def _instructions_for_mode(request_mode: str) -> str:
+        normalized_mode = request_mode.strip()
+        if normalized_mode == "framework_comparison":
+            return f"{GROUNDED_SYSTEM_INSTRUCTIONS}\n\n{FRAMEWORK_COMPARISON_INSTRUCTIONS}"
+        if normalized_mode == "scenario_analysis":
+            return f"{GROUNDED_SYSTEM_INSTRUCTIONS}\n\n{SCENARIO_ANALYSIS_INSTRUCTIONS}"
+        if normalized_mode == "deliverable_outline":
+            return f"{GROUNDED_SYSTEM_INSTRUCTIONS}\n\n{DELIVERABLE_OUTLINE_INSTRUCTIONS}"
+        if normalized_mode == "source_conflict_review":
+            return f"{GROUNDED_SYSTEM_INSTRUCTIONS}\n\n{SOURCE_CONFLICT_REVIEW_INSTRUCTIONS}"
+        return GROUNDED_SYSTEM_INSTRUCTIONS
 
     @staticmethod
     def _build_user_input(
