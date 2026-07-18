@@ -21,6 +21,8 @@ from pliris.retrieval.models import RetrievedChunk
 
 logger = logging.getLogger(__name__)
 
+MAX_CITATION_EXCERPT_CHARS = 600
+
 
 @dataclass(frozen=True, slots=True)
 class PipelineCitation:
@@ -257,7 +259,7 @@ class GroundedResponseOrchestrator:
                     chunk_id=chunk.chunk_id,
                     source=chunk.source,
                     title=chunk.title,
-                    text=chunk.text,
+                    text=GroundedResponseOrchestrator._citation_excerpt(chunk.text),
                     page=chunk.page_start,
                     page_start=chunk.page_start,
                     page_end=chunk.page_end,
@@ -269,6 +271,20 @@ class GroundedResponseOrchestrator:
             )
 
         return citations
+
+    @staticmethod
+    def _citation_excerpt(text: str) -> str:
+        normalized = " ".join(text.split())
+        if len(normalized) <= MAX_CITATION_EXCERPT_CHARS:
+            return normalized
+
+        candidate = normalized[: MAX_CITATION_EXCERPT_CHARS - 1].rstrip()
+        word_boundary = candidate.rfind(" ")
+
+        if word_boundary >= MAX_CITATION_EXCERPT_CHARS // 2:
+            candidate = candidate[:word_boundary].rstrip()
+
+        return candidate + "…"
 
     @staticmethod
     def _usage_dict(usage: Any) -> dict[str, int | None]:

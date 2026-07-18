@@ -339,3 +339,44 @@ async def test_pipeline_validates_inputs() -> None:
         match="message must not be blank",
     ):
         await orchestrator.process_query(message="   ")
+
+
+@pytest.mark.asyncio
+async def test_pipeline_truncates_public_citation_excerpt() -> None:
+    long_text = " ".join(f"requirement-{index}" for index in range(100))
+    chunk = make_chunk(1, text=long_text)
+    orchestrator = GroundedResponseOrchestrator(
+        retriever=FakeRetriever([chunk]),
+        context_assembler=ContextAssembler(),
+        generator=FakeGenerator(),
+    )
+
+    result = await orchestrator.process_query(
+        message="What is traceability?",
+    )
+
+    citation_text = result.citations[0].text
+
+    assert len(citation_text) <= 600
+    assert citation_text.endswith("…")
+    assert "\n" not in citation_text
+    assert citation_text != long_text
+
+
+@pytest.mark.asyncio
+async def test_pipeline_preserves_short_citation_excerpt() -> None:
+    chunk = make_chunk(
+        1,
+        text="  Requirements\ntraceability records lineage.  ",
+    )
+    orchestrator = GroundedResponseOrchestrator(
+        retriever=FakeRetriever([chunk]),
+        context_assembler=ContextAssembler(),
+        generator=FakeGenerator(),
+    )
+
+    result = await orchestrator.process_query(
+        message="What is traceability?",
+    )
+
+    assert result.citations[0].text == ("Requirements traceability records lineage.")
