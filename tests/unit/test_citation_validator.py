@@ -95,7 +95,7 @@ def test_validator_rejects_unknown_citation() -> None:
 def test_validator_rejects_declared_inline_mismatch() -> None:
     with pytest.raises(
         GroundedResponseValidationError,
-        match="must match their first appearance",
+        match="must match the citations used in the answer",
     ):
         validate(
             GroundedDraft(
@@ -146,3 +146,21 @@ def test_validator_rejects_insufficient_response_with_citations() -> None:
                 insufficient_evidence=True,
             )
         )
+
+
+def test_validator_normalizes_declared_ids_to_inline_order() -> None:
+    answer = validate(
+        GroundedDraft(
+            answer=(
+                "Traceability supports impact analysis [S2] and records requirement lineage [S1]."
+            ),
+            citation_ids=("S1", "S2"),
+            insufficient_evidence=False,
+        )
+    )
+
+    assert answer.citation_ids == ("S2", "S1")
+    assert [item.chunk_id for item in answer.citations] == [
+        "chunk-2",
+        "chunk-1",
+    ]

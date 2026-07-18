@@ -58,15 +58,15 @@ class CitationValidator:
             raise GroundedResponseValidationError(
                 "A supported answer must contain at least one inline citation."
             )
-        if inline_ids != declared_ids:
+        if set(inline_ids) != set(declared_ids):
             raise GroundedResponseValidationError(
-                "Declared citation identifiers must match their first appearance in the answer."
+                "Declared citation identifiers must match the citations used in the answer."
             )
 
-        citations = tuple(available[citation_id] for citation_id in declared_ids)
+        citations = tuple(available[citation_id] for citation_id in inline_ids)
         return GroundedAnswer(
             answer=answer,
-            citation_ids=tuple(declared_ids),
+            citation_ids=tuple(inline_ids),
             citations=citations,
             insufficient_evidence=False,
             model=model,
