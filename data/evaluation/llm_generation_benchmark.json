@@ -1,0 +1,584 @@
+{
+  "version": 1,
+  "name": "Pliris Grounded Generation Benchmark",
+  "description": "Frozen Phase 6 benchmark for comparing final grounded answers across generation-prompt variants. Retrieval contexts must be obtained once per case and reused unchanged across variants.",
+  "cases": [
+    {
+      "id": "grounded_traceability_definition",
+      "question": "What is requirements traceability, and why is it useful?",
+      "request_mode": "grounded_question",
+      "context_strategy": "retrieval",
+      "document_id": "babok-v3",
+      "retrieval_query": "What is requirements traceability?",
+      "expected_page_ranges": [
+        {
+          "start": 89,
+          "end": 93
+        },
+        {
+          "start": 460,
+          "end": 462
+        }
+      ],
+      "required_term_groups": [
+        [
+          "lineage",
+          "relationships between sets of requirements"
+        ],
+        [
+          "backward traceability",
+          "forward traceability"
+        ],
+        [
+          "impact analysis",
+          "effects of change",
+          "change control"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "synthetic_chunks": [],
+      "expected_behaviors": [
+        "Define traceability using retrieved evidence.",
+        "Explain supported practical value without inventing benefits.",
+        "Cite each substantive claim."
+      ],
+      "forbidden_behaviors": [
+        "Invent unsupported traceability tools or mandatory templates.",
+        "Use uncited factual claims."
+      ],
+      "minimum_citations": 1,
+      "expect_insufficient_evidence": false,
+      "expected_exact_answer": null,
+      "tags": [
+        "grounded",
+        "definition",
+        "retrieval"
+      ]
+    },
+    {
+      "id": "grounded_prioritization_factors",
+      "question": "Which factors should a business analyst consider when prioritizing requirements?",
+      "request_mode": "grounded_question",
+      "context_strategy": "retrieval",
+      "document_id": "babok-v3",
+      "retrieval_query": "How should business analysts prioritize requirements?",
+      "expected_page_ranges": [
+        {
+          "start": 97,
+          "end": 101
+        }
+      ],
+      "required_term_groups": [
+        [
+          "value",
+          "benefit"
+        ],
+        [
+          "risk"
+        ],
+        [
+          "dependency",
+          "dependencies"
+        ],
+        [
+          "urgency",
+          "time sensitivity"
+        ],
+        [
+          "constraints",
+          "available resources"
+        ]
+      ],
+      "minimum_term_groups": 3,
+      "synthetic_chunks": [],
+      "expected_behaviors": [
+        "Identify only prioritization factors supported by the context.",
+        "Explain the factors concisely.",
+        "Avoid presenting one universal ranking formula."
+      ],
+      "forbidden_behaviors": [
+        "Invent numeric weights.",
+        "Declare a single factor universally decisive."
+      ],
+      "minimum_citations": 1,
+      "expect_insufficient_evidence": false,
+      "expected_exact_answer": null,
+      "tags": [
+        "grounded",
+        "prioritization",
+        "retrieval"
+      ]
+    },
+    {
+      "id": "comparison_validation_verification",
+      "question": "Compare requirements verification and requirements validation.",
+      "request_mode": "framework_comparison",
+      "context_strategy": "retrieval",
+      "document_id": "babok-v3",
+      "retrieval_query": "requirements verification versus requirements validation",
+      "expected_page_ranges": [
+        {
+          "start": 151,
+          "end": 160
+        },
+        {
+          "start": 459,
+          "end": 469
+        }
+      ],
+      "required_term_groups": [
+        [
+          "defined correctly",
+          "correctly defined",
+          "quality"
+        ],
+        [
+          "expected benefits",
+          "deliver benefit",
+          "value"
+        ],
+        [
+          "ready for validation",
+          "solution scope"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "synthetic_chunks": [],
+      "expected_behaviors": [
+        "Use a common comparison basis.",
+        "Distinguish purpose and focus.",
+        "Explain how the practices relate without declaring an unsupported winner."
+      ],
+      "forbidden_behaviors": [
+        "Treat verification and validation as interchangeable.",
+        "Add unsupported lifecycle sequencing."
+      ],
+      "minimum_citations": 2,
+      "expect_insufficient_evidence": false,
+      "expected_exact_answer": null,
+      "tags": [
+        "comparison",
+        "verification",
+        "validation",
+        "retrieval"
+      ]
+    },
+    {
+      "id": "comparison_traceability_maintenance",
+      "question": "Compare requirements traceability with requirements maintenance.",
+      "request_mode": "framework_comparison",
+      "context_strategy": "retrieval",
+      "document_id": "babok-v3",
+      "retrieval_query": "requirements traceability and requirements maintenance",
+      "expected_page_ranges": [
+        {
+          "start": 89,
+          "end": 96
+        }
+      ],
+      "required_term_groups": [
+        [
+          "lineage",
+          "traceability"
+        ],
+        [
+          "accuracy and consistency",
+          "retain requirement accuracy"
+        ],
+        [
+          "requirements life cycle",
+          "reuse"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "synthetic_chunks": [],
+      "expected_behaviors": [
+        "Compare the practices on evidence-supported dimensions.",
+        "Identify similarities and differences.",
+        "Avoid treating either practice as a substitute for the other."
+      ],
+      "forbidden_behaviors": [
+        "Invent mandatory software.",
+        "Declare an unsupported preferred practice."
+      ],
+      "minimum_citations": 2,
+      "expect_insufficient_evidence": false,
+      "expected_exact_answer": null,
+      "tags": [
+        "comparison",
+        "traceability",
+        "maintenance",
+        "retrieval"
+      ]
+    },
+    {
+      "id": "scenario_approved_requirement_change",
+      "question": "A high-priority requirement changes after approval. How should the business analyst analyze and manage the impact?",
+      "request_mode": "scenario_analysis",
+      "context_strategy": "retrieval",
+      "document_id": "babok-v3",
+      "retrieval_query": "requirements change impact analysis traceability maintenance prioritization",
+      "expected_page_ranges": [
+        {
+          "start": 89,
+          "end": 101
+        }
+      ],
+      "required_term_groups": [
+        [
+          "impact analysis",
+          "effects of change"
+        ],
+        [
+          "traceability",
+          "lineage"
+        ],
+        [
+          "maintain requirements",
+          "accuracy and consistency"
+        ],
+        [
+          "priority",
+          "risk",
+          "dependency"
+        ]
+      ],
+      "minimum_term_groups": 3,
+      "synthetic_chunks": [],
+      "expected_behaviors": [
+        "Keep scenario consequences conditional.",
+        "Identify evidence-supported impact-analysis considerations.",
+        "State missing project-specific evidence."
+      ],
+      "forbidden_behaviors": [
+        "Invent stakeholders, dates, approvals, or implementation impacts.",
+        "Assign unsupported probabilities."
+      ],
+      "minimum_citations": 2,
+      "expect_insufficient_evidence": false,
+      "expected_exact_answer": null,
+      "tags": [
+        "scenario",
+        "change",
+        "impact",
+        "retrieval"
+      ]
+    },
+    {
+      "id": "scenario_stakeholder_unavailable",
+      "question": "A key stakeholder becomes unavailable during requirements discovery. What should the business analyst consider?",
+      "request_mode": "scenario_analysis",
+      "context_strategy": "retrieval",
+      "document_id": "babok-v3",
+      "retrieval_query": "stakeholder analysis business analysis approach risks",
+      "expected_page_ranges": [
+        {
+          "start": 34,
+          "end": 44
+        },
+        {
+          "start": 354,
+          "end": 356
+        }
+      ],
+      "required_term_groups": [
+        [
+          "stakeholder list",
+          "stakeholder map"
+        ],
+        [
+          "business analysis approach"
+        ],
+        [
+          "risk",
+          "stakeholders",
+          "timing",
+          "complexity"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "synthetic_chunks": [],
+      "expected_behaviors": [
+        "Distinguish known guidance from scenario assumptions.",
+        "Identify evidence-supported considerations and options.",
+        "Avoid naming an unauthorized replacement stakeholder."
+      ],
+      "forbidden_behaviors": [
+        "Assume governance authority not present in the evidence.",
+        "Present a hypothetical delay as certain."
+      ],
+      "minimum_citations": 2,
+      "expect_insufficient_evidence": false,
+      "expected_exact_answer": null,
+      "tags": [
+        "scenario",
+        "stakeholder",
+        "discovery",
+        "retrieval"
+      ]
+    },
+    {
+      "id": "outline_traceability_matrix",
+      "question": "Outline a practical requirements traceability matrix.",
+      "request_mode": "deliverable_outline",
+      "context_strategy": "retrieval",
+      "document_id": "babok-v3",
+      "retrieval_query": "requirements traceability relationships lineage impact analysis",
+      "expected_page_ranges": [
+        {
+          "start": 89,
+          "end": 93
+        },
+        {
+          "start": 460,
+          "end": 462
+        }
+      ],
+      "required_term_groups": [
+        [
+          "lineage",
+          "relationships"
+        ],
+        [
+          "backward traceability",
+          "forward traceability"
+        ],
+        [
+          "impact analysis",
+          "change control"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "synthetic_chunks": [],
+      "expected_behaviors": [
+        "Provide an outline rather than a completed artifact.",
+        "Separate evidence-backed elements from suggested placeholders.",
+        "Include traceability and quality checks when supported."
+      ],
+      "forbidden_behaviors": [
+        "Invent requirement IDs, owners, dates, or statuses.",
+        "Claim a single mandatory template."
+      ],
+      "minimum_citations": 1,
+      "expect_insufficient_evidence": false,
+      "expected_exact_answer": null,
+      "tags": [
+        "outline",
+        "traceability",
+        "deliverable",
+        "retrieval"
+      ]
+    },
+    {
+      "id": "outline_stakeholder_analysis",
+      "question": "Outline a stakeholder analysis deliverable for a new initiative.",
+      "request_mode": "deliverable_outline",
+      "context_strategy": "retrieval",
+      "document_id": "babok-v3",
+      "retrieval_query": "stakeholder analysis stakeholder list map personas",
+      "expected_page_ranges": [
+        {
+          "start": 41,
+          "end": 44
+        },
+        {
+          "start": 354,
+          "end": 356
+        }
+      ],
+      "required_term_groups": [
+        [
+          "stakeholder list",
+          "stakeholder lists"
+        ],
+        [
+          "stakeholder map",
+          "stakeholder maps"
+        ],
+        [
+          "persona",
+          "personas",
+          "interviews"
+        ]
+      ],
+      "minimum_term_groups": 2,
+      "synthetic_chunks": [],
+      "expected_behaviors": [
+        "Describe purpose, audience, sections, inputs, and review needs when supported.",
+        "Use placeholders for initiative-specific information.",
+        "Keep the response at outline level."
+      ],
+      "forbidden_behaviors": [
+        "Invent stakeholder names or influence ratings.",
+        "Present the outline as completed analysis."
+      ],
+      "minimum_citations": 1,
+      "expect_insufficient_evidence": false,
+      "expected_exact_answer": null,
+      "tags": [
+        "outline",
+        "stakeholder",
+        "deliverable",
+        "retrieval"
+      ]
+    },
+    {
+      "id": "conflict_baseline_retention",
+      "question": "Review the conflict between these sources about the approved requirements baseline.",
+      "request_mode": "source_conflict_review",
+      "context_strategy": "synthetic",
+      "document_id": null,
+      "retrieval_query": null,
+      "expected_page_ranges": [],
+      "required_term_groups": [],
+      "minimum_term_groups": 0,
+      "synthetic_chunks": [
+        {
+          "chunk_id": "conflict-retain",
+          "title": "Change Control Standard",
+          "source": "change-control-standard",
+          "text": "Approved requirements baselines must be retained. Approved changes are recorded as controlled revisions so prior baselines remain auditable.",
+          "page_start": 10,
+          "page_end": 10
+        },
+        {
+          "chunk_id": "conflict-replace",
+          "title": "Delivery Team Procedure",
+          "source": "delivery-team-procedure",
+          "text": "When a requirement change is approved, the team replaces the prior baseline file with the newly approved version.",
+          "page_start": 4,
+          "page_end": 4
+        }
+      ],
+      "expected_behaviors": [
+        "Present each source position separately.",
+        "Identify a direct contradiction.",
+        "Keep the conflict unresolved because authority and supersession are not established."
+      ],
+      "forbidden_behaviors": [
+        "Blend the positions into false consensus.",
+        "Select a governing source without evidence."
+      ],
+      "minimum_citations": 2,
+      "expect_insufficient_evidence": false,
+      "expected_exact_answer": null,
+      "tags": [
+        "conflict",
+        "synthetic",
+        "direct-contradiction"
+      ]
+    },
+    {
+      "id": "conflict_approval_scope",
+      "question": "Do these sources conflict about who may approve changes?",
+      "request_mode": "source_conflict_review",
+      "context_strategy": "synthetic",
+      "document_id": null,
+      "retrieval_query": null,
+      "expected_page_ranges": [],
+      "required_term_groups": [],
+      "minimum_term_groups": 0,
+      "synthetic_chunks": [
+        {
+          "chunk_id": "approval-policy",
+          "title": "Project Governance Policy",
+          "source": "project-governance-policy",
+          "text": "The sponsor approves changes that affect committed scope, budget, or delivery dates.",
+          "page_start": 2,
+          "page_end": 2
+        },
+        {
+          "chunk_id": "approval-working-agreement",
+          "title": "Team Working Agreement",
+          "source": "team-working-agreement",
+          "text": "The product owner may approve backlog wording changes that do not change committed scope, budget, or delivery dates.",
+          "page_start": 6,
+          "page_end": 6
+        }
+      ],
+      "expected_behaviors": [
+        "Present each source position separately.",
+        "Recognize the different scopes instead of asserting a direct contradiction.",
+        "Avoid inferring hierarchy beyond the supplied text."
+      ],
+      "forbidden_behaviors": [
+        "Declare one source superseded.",
+        "State that sponsor and product owner authority are identical."
+      ],
+      "minimum_citations": 2,
+      "expect_insufficient_evidence": false,
+      "expected_exact_answer": null,
+      "tags": [
+        "conflict",
+        "synthetic",
+        "scope-difference"
+      ]
+    },
+    {
+      "id": "grounded_partial_evidence",
+      "question": "Did the pilot reduce operating cost and processing time, and by how much?",
+      "request_mode": "grounded_question",
+      "context_strategy": "synthetic",
+      "document_id": null,
+      "retrieval_query": null,
+      "expected_page_ranges": [],
+      "required_term_groups": [],
+      "minimum_term_groups": 0,
+      "synthetic_chunks": [
+        {
+          "chunk_id": "pilot-review",
+          "title": "Pilot Review Note",
+          "source": "pilot-review-note",
+          "text": "The pilot review observed fewer duplicate entries after the new workflow was introduced. The review did not measure operating cost or processing time.",
+          "page_start": 1,
+          "page_end": 1
+        }
+      ],
+      "expected_behaviors": [
+        "State that cost and processing-time effects are not established.",
+        "Mention the supported duplicate-entry observation only if relevant.",
+        "Do not convert partial evidence into a complete result."
+      ],
+      "forbidden_behaviors": [
+        "Invent percentages, currency values, or time savings.",
+        "Claim the pilot reduced cost or processing time."
+      ],
+      "minimum_citations": 1,
+      "expect_insufficient_evidence": false,
+      "expected_exact_answer": null,
+      "tags": [
+        "grounded",
+        "synthetic",
+        "partial-evidence"
+      ]
+    },
+    {
+      "id": "insufficient_vendor_threshold",
+      "question": "What approval threshold does Pliris use for vendor contracts?",
+      "request_mode": "grounded_question",
+      "context_strategy": "empty",
+      "document_id": null,
+      "retrieval_query": null,
+      "expected_page_ranges": [],
+      "required_term_groups": [],
+      "minimum_term_groups": 0,
+      "synthetic_chunks": [],
+      "expected_behaviors": [
+        "Return the exact insufficient-evidence response.",
+        "Return no citations."
+      ],
+      "forbidden_behaviors": [
+        "Invent an approval threshold.",
+        "Use general procurement knowledge."
+      ],
+      "minimum_citations": 0,
+      "expect_insufficient_evidence": true,
+      "expected_exact_answer": "The available knowledge base does not contain enough evidence to answer this question.",
+      "tags": [
+        "grounded",
+        "empty-context",
+        "insufficient-evidence"
+      ]
+    }
+  ]
+}

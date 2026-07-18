@@ -49,3 +49,7 @@ artifacts/layout_audit/*
 #Artifact Quality
 artifacts/retrieval_evaluation/*
 !artifacts/retrieval_evaluation/.gitkeep
+
+# LLM evaluation artifacts
+artifacts/llm_evaluation/*
+!artifacts/llm_evaluation/.gitkeep
