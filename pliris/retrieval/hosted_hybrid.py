@@ -127,7 +127,16 @@ class HostedHybridRetriever:
     @staticmethod
     def _metadata(row: dict[str, Any]) -> dict[str, Any]:
         metadata = row.get("metadata")
-        return dict(metadata) if isinstance(metadata, dict) else {}
+        normalized = dict(metadata) if isinstance(metadata, dict) else {}
+
+        semantic_rank = HostedHybridRetriever._optional_int(row.get("semantic_rank"))
+        keyword_rank = HostedHybridRetriever._optional_int(row.get("keyword_rank"))
+        if semantic_rank is not None:
+            normalized["semantic_rank"] = semantic_rank
+        if keyword_rank is not None:
+            normalized["keyword_rank"] = keyword_rank
+
+        return normalized
 
     @classmethod
     def _normalize_row(
@@ -153,7 +162,6 @@ class HostedHybridRetriever:
             or "Knowledge Base Document"
         )
         manifest_id = metadata.get("manifest_document_id") or metadata.get("manifest_id")
-
         source = str(
             row.get("source")
             or metadata.get("source")
@@ -161,7 +169,6 @@ class HostedHybridRetriever:
             or manifest_id
             or title
         )
-
         document_id = row.get("document_id") or metadata.get("document_id")
         chunk_id = (
             row.get("chunk_id")

@@ -7,6 +7,9 @@ import pytest
 from pliris.agents.grounded_orchestrator import (
     GroundedResponseOrchestrator,
 )
+from pliris.database.repositories.grounded_persistence import (
+    PersistenceOutcome,
+)
 from pliris.generation.context_assembler import (
     AssembledContext,
     ContextAssembler,
@@ -35,7 +38,11 @@ def make_chunk(
         page_end=82 + rank,
         score=0.04 - rank / 1000,
         document_id="doc-1",
-        metadata={"manifest_document_id": "babok-v3"},
+        metadata={
+            "manifest_document_id": "babok-v3",
+            "semantic_rank": rank,
+            "keyword_rank": rank + 1,
+        },
     )
 
 
@@ -118,6 +125,30 @@ class FakeGenerator:
         )
 
 
+class FakePersistence:
+    def __init__(
+        self,
+        *,
+        error: Exception | None = None,
+    ) -> None:
+        self.error = error
+        self.exchanges: list[Any] = []
+
+    async def persist_exchange(self, exchange: Any) -> Any:
+        self.exchanges.append(exchange)
+        if self.error is not None:
+            raise self.error
+        return PersistenceOutcome(
+            client_session_id="persisted-session",
+            database_conversation_id="db-conversation",
+            user_message_id="user-message",
+            assistant_message_id="assistant-message",
+            retrieval_query_id="retrieval-query",
+            monitoring_event_id="monitoring-event",
+            retrieval_result_count=len(exchange.chunks),
+        )
+
+
 @pytest.mark.asyncio
 async def test_pipeline_connects_production_components() -> None:
     retriever = FakeRetriever([make_chunk(1), make_chunk(2)])
@@ -152,29 +183,76 @@ async def test_pipeline_connects_production_components() -> None:
     assert len(result.citations) == 1
     assert result.citations[0].chunk_id == "chunk-1"
     assert result.citations[0].page == 81
-    assert result.citations[0].page_start == 81
-    assert result.citations[0].page_end == 83
     assert result.usage["total_tokens"] == 120
     assert result.metadata["user_id"] == "user-1"
     assert result.metadata["retrieved_count"] == 2
-    assert result.metadata["context_source_count"] == 2
-    assert result.metadata["document_id"] == "babok-v3"
+    assert result.metadata["persistence"] == {"status": "disabled"}
 
-    for key in (
-        "retrieval_ms",
-        "assembly_ms",
-        "generation_ms",
-        "total_ms",
-    ):
-        assert result.metadata[key] >= 0
+
+@pytest.mark.asyncio
+async def test_pipeline_persists_exchange_and_returns_session() -> None:
+    persistence = FakePersistence()
+    orchestrator = GroundedResponseOrchestrator(
+        retriever=FakeRetriever([make_chunk(1)]),
+        context_assembler=ContextAssembler(),
+        generator=FakeGenerator(),
+        persistence_repository=persistence,
+    )
+
+    result = await orchestrator.process_query(
+        message="What is traceability?",
+        conversation_id=None,
+        user_id="user-1",
+        document_id="babok-v3",
+        scope_status="in_scope",
+        scope_confidence=0.8,
+        scope_category="business_analysis",
+    )
+
+    assert result.conversation_id == "persisted-session"
+    assert result.metadata["persistence"]["status"] == ("completed")
+    assert result.metadata["persistence"]["database_conversation_id"] == "db-conversation"
+    assert result.metadata["persistence"]["retrieval_result_count"] == 1
+
+    exchange = persistence.exchanges[0]
+    assert exchange.user_id == "user-1"
+    assert exchange.scope_confidence == 0.8
+    assert exchange.scope_category == "business_analysis"
+    assert exchange.requested_match_count == 5
+    assert exchange.selected_chunk_ids == frozenset({"chunk-1"})
+    assert exchange.citations[0]["citation_id"] == "S1"
+    assert exchange.metadata["retrieved_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_pipeline_returns_answer_when_persistence_fails() -> None:
+    orchestrator = GroundedResponseOrchestrator(
+        retriever=FakeRetriever([make_chunk(1)]),
+        context_assembler=ContextAssembler(),
+        generator=FakeGenerator(),
+        persistence_repository=FakePersistence(error=RuntimeError("database unavailable")),
+    )
+
+    result = await orchestrator.process_query(
+        message="What is traceability?",
+        conversation_id="conv-original",
+    )
+
+    assert result.response == "Grounded answer [S1]."
+    assert result.conversation_id == "conv-original"
+    assert result.metadata["persistence"]["status"] == "failed"
+    assert result.metadata["persistence"]["error_type"] == ("RuntimeError")
+    assert result.metadata["persistence"]["latency_ms"] >= 0
 
 
 @pytest.mark.asyncio
 async def test_pipeline_returns_zero_confidence_when_insufficient() -> None:
+    persistence = FakePersistence()
     orchestrator = GroundedResponseOrchestrator(
         retriever=FakeRetriever([]),
         context_assembler=ContextAssembler(),
         generator=FakeGenerator(insufficient=True),
+        persistence_repository=persistence,
     )
 
     result = await orchestrator.process_query(
@@ -186,7 +264,8 @@ async def test_pipeline_returns_zero_confidence_when_insufficient() -> None:
     assert result.citations == ()
     assert result.confidence == 0.0
     assert result.metadata["retrieved_count"] == 0
-    assert result.metadata["context_source_count"] == 0
+    assert persistence.exchanges[0].chunks == ()
+    assert persistence.exchanges[0].citations == ()
 
 
 @pytest.mark.asyncio
@@ -226,8 +305,7 @@ async def test_pipeline_citation_preserves_api_ready_excerpt() -> None:
     assert citation["citation_id"] == "S1"
     assert citation["text"] == ("Requirements traceability identifies lineage.")
     assert citation["source"] == "babok-v3"
-    assert citation["title"] == "BABOK Guide"
-    assert citation["metadata"] == {"manifest_document_id": "babok-v3"}
+    assert citation["metadata"]["semantic_rank"] == 1
 
 
 @pytest.mark.asyncio

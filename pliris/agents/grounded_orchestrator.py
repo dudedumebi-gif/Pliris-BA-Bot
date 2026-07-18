@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import asdict, dataclass, field
 from time import perf_counter
 from typing import Any
 
+from pliris.database.repositories.grounded_persistence import (
+    GroundedExchange,
+)
 from pliris.generation.context_assembler import (
     AssembledContext,
     ContextAssembler,
@@ -14,6 +18,8 @@ from pliris.generation.grounded_generator import (
 from pliris.generation.grounded_models import GroundedAnswer
 from pliris.retrieval.hosted_hybrid import HostedHybridRetriever
 from pliris.retrieval.models import RetrievedChunk
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,8 +80,8 @@ class GroundedPipelineResult:
 
 class GroundedResponseOrchestrator:
     """
-    Connect hosted retrieval, deterministic context assembly, and grounded
-    generation without persistence or API-route changes.
+    Connect hosted retrieval, context assembly, grounded generation, and
+    optional transactional persistence.
     """
 
     def __init__(
@@ -84,6 +90,7 @@ class GroundedResponseOrchestrator:
         retriever: Any | None = None,
         context_assembler: ContextAssembler | None = None,
         generator: Any | None = None,
+        persistence_repository: Any | None = None,
         top_k: int = 5,
     ) -> None:
         if top_k < 1:
@@ -94,6 +101,7 @@ class GroundedResponseOrchestrator:
         self.retriever = retriever or HostedHybridRetriever()
         self.context_assembler = context_assembler or ContextAssembler(max_chunks=top_k)
         self.generator = generator or GroundedResponseGenerator()
+        self.persistence_repository = persistence_repository
         self.top_k = top_k
 
     async def process_query(
@@ -103,6 +111,9 @@ class GroundedResponseOrchestrator:
         conversation_id: str | None = None,
         user_id: str = "system",
         document_id: str | None = None,
+        scope_status: str = "in_scope",
+        scope_confidence: float | None = None,
+        scope_category: str | None = None,
     ) -> GroundedPipelineResult:
         normalized_message = message.strip()
         if not normalized_message:
@@ -134,30 +145,81 @@ class GroundedResponseOrchestrator:
             context=context,
             chunks=chunks,
         )
+        usage = self._usage_dict(answer.usage)
+        pipeline_ms = self._elapsed_ms(total_started)
+
+        base_metadata: dict[str, Any] = {
+            "user_id": user_id,
+            "document_id": document_id,
+            "retrieved_count": len(chunks),
+            "context_source_count": len(context.sources),
+            "context_character_count": context.character_count,
+            "context_truncated": context.truncated,
+            "context_omitted_count": context.omitted_count,
+            "retrieval_ms": retrieval_ms,
+            "assembly_ms": assembly_ms,
+            "generation_ms": generation_ms,
+            "pipeline_ms": pipeline_ms,
+            "confidence_basis": "validated_citation_contract",
+            "generation": dict(answer.metadata),
+        }
+
+        resolved_conversation_id = conversation_id
+        persistence_metadata: dict[str, Any] = {"status": "disabled"}
+
+        if self.persistence_repository is not None:
+            persistence_started = perf_counter()
+            try:
+                outcome = await self.persistence_repository.persist_exchange(
+                    GroundedExchange(
+                        client_session_id=conversation_id,
+                        user_id=user_id,
+                        original_query=normalized_message,
+                        assistant_response=answer.answer,
+                        scope_status=scope_status,
+                        scope_confidence=scope_confidence,
+                        scope_category=scope_category,
+                        citations=tuple(citation.to_dict() for citation in citations),
+                        model_name=answer.model,
+                        input_tokens=usage.get("input_tokens"),
+                        output_tokens=usage.get("output_tokens"),
+                        total_latency_ms=pipeline_ms,
+                        retrieval_latency_ms=retrieval_ms,
+                        requested_match_count=self.top_k,
+                        chunks=tuple(chunks),
+                        selected_chunk_ids=frozenset(source.chunk_id for source in context.sources),
+                        insufficient_evidence=(answer.insufficient_evidence),
+                        response_id=answer.response_id,
+                        metadata=base_metadata,
+                    )
+                )
+            except Exception as exc:
+                logger.exception("Grounded response persistence failed")
+                persistence_metadata = {
+                    "status": "failed",
+                    "error_type": type(exc).__name__,
+                }
+            else:
+                resolved_conversation_id = outcome.client_session_id
+                persistence_metadata = {
+                    "status": "completed",
+                    **outcome.to_dict(),
+                }
+
+            persistence_metadata["latency_ms"] = self._elapsed_ms(persistence_started)
+
+        base_metadata["persistence"] = persistence_metadata
+        base_metadata["total_ms"] = self._elapsed_ms(total_started)
 
         return GroundedPipelineResult(
             response=answer.answer,
             citations=tuple(citations),
-            insufficient_evidence=(answer.insufficient_evidence),
-            conversation_id=conversation_id,
+            insufficient_evidence=answer.insufficient_evidence,
+            conversation_id=resolved_conversation_id,
             model=answer.model,
             response_id=answer.response_id,
-            usage=self._usage_dict(answer.usage),
-            metadata={
-                "user_id": user_id,
-                "document_id": document_id,
-                "retrieved_count": len(chunks),
-                "context_source_count": len(context.sources),
-                "context_character_count": (context.character_count),
-                "context_truncated": context.truncated,
-                "context_omitted_count": (context.omitted_count),
-                "retrieval_ms": retrieval_ms,
-                "assembly_ms": assembly_ms,
-                "generation_ms": generation_ms,
-                "total_ms": self._elapsed_ms(total_started),
-                "confidence_basis": "validated_citation_contract",
-                "generation": dict(answer.metadata),
-            },
+            usage=usage,
+            metadata=base_metadata,
         )
 
     @staticmethod
@@ -216,9 +278,21 @@ class GroundedResponseOrchestrator:
         if callable(to_dict):
             return dict(to_dict())
         return {
-            "input_tokens": getattr(usage, "input_tokens", None),
-            "output_tokens": getattr(usage, "output_tokens", None),
-            "total_tokens": getattr(usage, "total_tokens", None),
+            "input_tokens": getattr(
+                usage,
+                "input_tokens",
+                None,
+            ),
+            "output_tokens": getattr(
+                usage,
+                "output_tokens",
+                None,
+            ),
+            "total_tokens": getattr(
+                usage,
+                "total_tokens",
+                None,
+            ),
         }
 
     @staticmethod

@@ -10,6 +10,9 @@ from api.schemas.chat import ChatRequest, ChatResponse
 from pliris.agents.grounded_orchestrator import (
     GroundedResponseOrchestrator,
 )
+from pliris.database.repositories.grounded_persistence import (
+    GroundedPersistenceRepository,
+)
 from pliris.guardrails.prompt_injection import PromptInjectionDetector
 from pliris.guardrails.scope_classifier import ScopeClassifier
 
@@ -28,7 +31,7 @@ router = APIRouter()
 def get_grounded_orchestrator() -> GroundedResponseOrchestrator:
     """Return the production grounded response pipeline."""
 
-    return GroundedResponseOrchestrator()
+    return GroundedResponseOrchestrator(persistence_repository=GroundedPersistenceRepository())
 
 
 @lru_cache
@@ -117,6 +120,9 @@ async def chat(
             conversation_id=request.conversation_id,
             user_id=user["id"],
             document_id=_document_id(request.context),
+            scope_status="in_scope",
+            scope_confidence=_scope_confidence(scope_result),
+            scope_category=scope_result["category"],
         )
         result_data = result.to_dict()
 
@@ -166,3 +172,20 @@ def _document_id(context: dict[str, Any] | None) -> str | None:
 
     normalized = value.strip()
     return normalized or None
+
+
+def _scope_confidence(
+    scope_result: dict[str, Any],
+) -> float | None:
+    value = scope_result.get("confidence")
+    if value is None:
+        return None
+
+    try:
+        confidence = float(value)
+    except (TypeError, ValueError):
+        return None
+
+    if 0.0 <= confidence <= 1.0:
+        return confidence
+    return None

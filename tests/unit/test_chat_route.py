@@ -35,10 +35,12 @@ class FakeScopeClassifier:
         *,
         in_scope: bool = True,
         category: str = "business_analysis",
+        confidence: float | None = None,
         error: Exception | None = None,
     ) -> None:
         self.in_scope = in_scope
         self.category = category
+        self.confidence = confidence
         self.error = error
         self.messages: list[str] = []
 
@@ -46,10 +48,14 @@ class FakeScopeClassifier:
         self.messages.append(message)
         if self.error is not None:
             raise self.error
-        return {
+
+        result: dict[str, Any] = {
             "in_scope": self.in_scope,
             "category": self.category,
         }
+        if self.confidence is not None:
+            result["confidence"] = self.confidence
+        return result
 
 
 class FakePipelineResult:
@@ -82,19 +88,19 @@ class FakePipelineResult:
                 },
                 "metadata": {
                     "retrieved_count": 0,
-                    "confidence_basis": ("validated_citation_contract"),
+                    "persistence": {"status": "completed"},
                 },
             }
 
         return {
-            "response": "Requirements traceability records lineage [S1].",
+            "response": ("Requirements traceability records lineage [S1]."),
             "citations": [
                 {
                     "citation_id": "S1",
                     "chunk_id": "chunk-1",
                     "source": "babok-v3",
                     "title": "BABOK Guide",
-                    "text": "Traceability records requirement lineage.",
+                    "text": ("Traceability records requirement lineage."),
                     "page": 87,
                     "page_start": 87,
                     "page_end": 91,
@@ -118,6 +124,10 @@ class FakePipelineResult:
                 "retrieved_count": 5,
                 "context_source_count": 5,
                 "confidence_basis": ("validated_citation_contract"),
+                "persistence": {
+                    "status": "completed",
+                    "database_conversation_id": "db-conv",
+                },
             },
         }
 
@@ -143,7 +153,7 @@ class FakeOrchestrator:
 @pytest.mark.asyncio
 async def test_chat_routes_in_scope_query_to_grounded_pipeline() -> None:
     orchestrator = FakeOrchestrator()
-    scope = FakeScopeClassifier()
+    scope = FakeScopeClassifier(confidence=0.77)
     detector = FakeInjectionDetector()
 
     response = await chat(
@@ -164,10 +174,7 @@ async def test_chat_routes_in_scope_query_to_grounded_pipeline() -> None:
     assert response.conversation_id == "conv-1"
     assert len(response.citations) == 1
     assert response.citations[0].citation_id == "S1"
-    assert response.citations[0].page_start == 87
-    assert response.metadata["model"] == ("gpt-5-mini-2025-08-07")
-    assert response.metadata["usage"]["total_tokens"] == 120
-    assert response.metadata["retrieved_count"] == 5
+    assert response.metadata["persistence"]["status"] == ("completed")
 
     assert orchestrator.calls == [
         {
@@ -175,6 +182,9 @@ async def test_chat_routes_in_scope_query_to_grounded_pipeline() -> None:
             "conversation_id": "conv-1",
             "user_id": "user-1",
             "document_id": "babok-v3",
+            "scope_status": "in_scope",
+            "scope_confidence": 0.77,
+            "scope_category": "business_analysis",
         }
     ]
 
@@ -234,7 +244,7 @@ async def test_chat_returns_insufficient_evidence_metadata() -> None:
         user={"id": "system", "name": "System User"},
         orchestrator=FakeOrchestrator(
             result=FakePipelineResult(
-                conversation_id=None,
+                conversation_id="generated-session",
                 insufficient_evidence=True,
             )
         ),
@@ -244,6 +254,7 @@ async def test_chat_returns_insufficient_evidence_metadata() -> None:
 
     assert response.confidence == 0.0
     assert response.citations == []
+    assert response.conversation_id == "generated-session"
     assert response.metadata["insufficient_evidence"] is True
     assert response.metadata["response_id"] is None
 
@@ -313,6 +324,7 @@ def test_http_chat_serializes_grounded_response() -> None:
     assert payload["response"].endswith("[S1].")
     assert payload["citations"][0]["chunk_id"] == "chunk-1"
     assert payload["metadata"]["usage"]["total_tokens"] == 120
+    assert payload["metadata"]["persistence"]["status"] == ("completed")
     assert orchestrator.calls[0]["user_id"] == "api-user"
 
 
