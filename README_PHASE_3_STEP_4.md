@@ -223,3 +223,14 @@ Run:
 uv add --group evaluation "sentence-transformers==5.6.0"
 uv sync --group evaluation
 ```
+
+The final reranker command begins with:
+```bash
+uv run --group evaluation python -m scripts.evaluate_retrieval \
+  --methods hybrid hybrid_reranked \
+  --top-k 5 \
+  --document-id babok-v3 \
+  --repetitions 3 \
+  --warmup-count 1 \
+  --output-directory artifacts/retrieval_evaluation/reranker
+```

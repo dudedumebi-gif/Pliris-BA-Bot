@@ -33,7 +33,7 @@ class OpenAIClient:
             Generated text
         """
         try:
-            model = model or settings.openai_model
+            model = model or settings.openai_chat_model
 
             response = await self.client.chat.completions.create(
                 model=model,
