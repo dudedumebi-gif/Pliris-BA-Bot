@@ -63,7 +63,7 @@ class GroundedResponseGenerator:
         client: Any | None = None,
         settings: Any | None = None,
         validator: CitationValidator | None = None,
-        max_output_tokens: int = 1_200,
+        max_output_tokens: int = 2_400,
     ) -> None:
         if max_output_tokens < 100:
             raise ValueError("max_output_tokens must be at least 100.")
@@ -126,12 +126,23 @@ class GroundedResponseGenerator:
                 }
             },
             max_output_tokens=self.max_output_tokens,
+            reasoning={"effort": "low"},
             store=False,
         )
 
         status = getattr(response, "status", None)
         if status not in (None, "completed"):
-            raise GroundedResponseError(f"OpenAI response did not complete: {status!r}.")
+            incomplete_details = getattr(
+                response,
+                "incomplete_details",
+                None,
+            )
+            incomplete_reason = self._value(
+                incomplete_details,
+                "reason",
+            )
+            detail = f"; reason={incomplete_reason!r}" if incomplete_reason else ""
+            raise GroundedResponseError(f"OpenAI response did not complete: {status!r}{detail}.")
 
         output_text = str(getattr(response, "output_text", "") or "").strip()
         if not output_text:

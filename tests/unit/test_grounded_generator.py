@@ -101,7 +101,8 @@ async def test_generator_uses_responses_api_structured_output() -> None:
     call = client.responses.calls[0]
     assert call["model"] == "gpt-5-mini"
     assert call["store"] is False
-    assert call["max_output_tokens"] == 1_200
+    assert call["max_output_tokens"] == 2_400
+    assert call["reasoning"] == {"effort": "low"}
     assert call["text"]["format"]["schema"] == GROUNDED_RESPONSE_SCHEMA
     assert call["text"]["format"]["strict"] is True
     assert "[S1]" in call["input"]
@@ -163,6 +164,7 @@ async def test_generator_rejects_incomplete_response() -> None:
             id="resp-incomplete",
             model="gpt-5-mini",
             status="incomplete",
+            incomplete_details=SimpleNamespace(reason="max_output_tokens"),
             output_text="",
             usage=None,
         )
@@ -174,7 +176,7 @@ async def test_generator_rejects_incomplete_response() -> None:
 
     with pytest.raises(
         GroundedResponseError,
-        match="did not complete",
+        match="reason='max_output_tokens'",
     ):
         await generator.generate(
             question="What is traceability?",
