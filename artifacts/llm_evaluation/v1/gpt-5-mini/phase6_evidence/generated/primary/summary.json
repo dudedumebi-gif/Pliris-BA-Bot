@@ -1,0 +1,82 @@
+{
+  "budget": {
+    "embedding_input_tokens": 57,
+    "estimated_cost_usd": 0.10386489,
+    "generation_api_calls": 33,
+    "generation_input_tokens": 93911,
+    "generation_output_tokens": 40193
+  },
+  "complete": true,
+  "contract_fingerprint": "74c123e1b442a33c3628f0ad5207fc12fe3687847225f8a4962db571761fe271",
+  "expected_generation_api_calls": 33,
+  "generated_at_utc": "2026-07-18T23:31:56.516106+00:00",
+  "planned_attempts": 36,
+  "recorded_attempts": 36,
+  "selection_status": "not_performed_phase_6_step_2",
+  "stopped_for_budget": false,
+  "variants": [
+    {
+      "attempts_recorded": 12,
+      "automated_pass_rate": 0.9091,
+      "critical_failure_rate": 0.0909,
+      "dimension_means": {
+        "citation_quality": 3.6364,
+        "completeness": 4.0,
+        "groundedness": 2.7928,
+        "mode_fulfillment": 4.0,
+        "relevance_clarity": 3.1818,
+        "uncertainty_handling": 3.1818
+      },
+      "errors": 1,
+      "estimated_cost_usd": 0.034299,
+      "input_tokens": 31580,
+      "mean_latency_ms": 9764.27,
+      "mean_weighted_score": 3.4618,
+      "output_tokens": 13202,
+      "successes": 11,
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempts_recorded": 12,
+      "automated_pass_rate": 0.8889,
+      "critical_failure_rate": 0.1111,
+      "dimension_means": {
+        "citation_quality": 3.5556,
+        "completeness": 4.0,
+        "groundedness": 3.1013,
+        "mode_fulfillment": 4.0,
+        "relevance_clarity": 3.3333,
+        "uncertainty_handling": 3.1111
+      },
+      "errors": 3,
+      "estimated_cost_usd": 0.03684925,
+      "input_tokens": 31493,
+      "mean_latency_ms": 8463.43,
+      "mean_weighted_score": 3.5309,
+      "output_tokens": 14488,
+      "successes": 9,
+      "variant_id": "evidence_first_v1"
+    },
+    {
+      "attempts_recorded": 12,
+      "automated_pass_rate": 1.0,
+      "critical_failure_rate": 0.0,
+      "dimension_means": {
+        "citation_quality": 4.0,
+        "completeness": 4.0,
+        "groundedness": 3.4074,
+        "mode_fulfillment": 4.0,
+        "relevance_clarity": 3.8,
+        "uncertainty_handling": 3.2
+      },
+      "errors": 2,
+      "estimated_cost_usd": 0.0327155,
+      "input_tokens": 30838,
+      "mean_latency_ms": 8704.22,
+      "mean_weighted_score": 3.7518,
+      "output_tokens": 12503,
+      "successes": 10,
+      "variant_id": "production_baseline_v1"
+    }
+  ]
+}

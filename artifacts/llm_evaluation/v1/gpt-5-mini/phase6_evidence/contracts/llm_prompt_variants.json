@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "name": "Pliris Generation Prompt Candidates",
+  "description": "Evaluation-only prompt candidates. The production baseline reproduces the current Phase 5 instruction path; the other candidates append one controlled design change.",
+  "variants": [
+    {
+      "id": "production_baseline_v1",
+      "version": 1,
+      "name": "Production baseline",
+      "hypothesis": "The current Phase 5 grounded instructions provide the strongest overall balance without extra response-planning guidance.",
+      "additional_instructions": "",
+      "is_production_baseline": true
+    },
+    {
+      "id": "evidence_first_v1",
+      "version": 1,
+      "name": "Evidence-first",
+      "hypothesis": "Explicit evidence planning will reduce unsupported synthesis and improve citation placement without materially reducing completeness.",
+      "additional_instructions": "Before drafting the answer, identify which requested claims are directly answerable from the supplied context. Lead with the most directly supported answer, keep each substantive claim close to its citation, and clearly separate supported conclusions from conditions, assumptions, and unresolved evidence gaps. Do not add background that is not needed to answer the question.",
+      "is_production_baseline": false
+    },
+    {
+      "id": "decision_ready_v1",
+      "version": 1,
+      "name": "Decision-ready structure",
+      "hypothesis": "Practitioner-oriented organization will improve clarity and actionability while preserving the existing grounding contract.",
+      "additional_instructions": "Organize the answer for a Business Analysis or Project Management practitioner. Begin with a direct answer, then use concise labeled sections only when they improve clarity. Present material options, trade-offs, next decisions, and evidence gaps when the supplied context supports them. Avoid repeating the question or restating source text without adding analytical value.",
+      "is_production_baseline": false
+    }
+  ]
+}

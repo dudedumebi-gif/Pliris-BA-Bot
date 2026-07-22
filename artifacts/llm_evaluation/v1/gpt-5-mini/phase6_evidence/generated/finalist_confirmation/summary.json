@@ -1,0 +1,45 @@
+{
+  "budget": {
+    "embedding_input_tokens": 57,
+    "estimated_cost_usd": 0.17483089,
+    "generation_api_calls": 55,
+    "generation_input_tokens": 157671,
+    "generation_output_tokens": 67706
+  },
+  "complete": true,
+  "expected_generation_api_calls": 22,
+  "finalist_contract_fingerprint": "7fe5f2e9f2be5fd7b6f2fb2c2b5829ea796c479d364a60e002754423455f5241",
+  "generated_at_utc": "2026-07-22T00:33:55.171537+00:00",
+  "parent_contract_fingerprint": "74c123e1b442a33c3628f0ad5207fc12fe3687847225f8a4962db571761fe271",
+  "planned_attempts": 24,
+  "recorded_attempts": 24,
+  "selection_status": "pending_blinded_human_review",
+  "source_human_review_fingerprint": "a584db1c9c35aaaa628201c1cfe4e6c81c6308e1fd8252d1d94557db69dec0a0",
+  "stopped_for_budget": false,
+  "variants": [
+    {
+      "attempts_recorded": 12,
+      "automated_gate_met": false,
+      "automated_pass_rate": 0.8333,
+      "critical_failure_rate": 0.1667,
+      "critical_failures": 2,
+      "estimated_cost_usd": 0.038931,
+      "mean_weighted_score": 3.0951,
+      "response_contract_failures": 2,
+      "successes": 10,
+      "variant_id": "decision_ready_hardened_v1"
+    },
+    {
+      "attempts_recorded": 12,
+      "automated_gate_met": false,
+      "automated_pass_rate": 0.8333,
+      "critical_failure_rate": 0.1667,
+      "critical_failures": 2,
+      "estimated_cost_usd": 0.032035,
+      "mean_weighted_score": 3.2433,
+      "response_contract_failures": 1,
+      "successes": 11,
+      "variant_id": "production_baseline_v1"
+    }
+  ]
+}

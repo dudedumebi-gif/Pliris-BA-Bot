@@ -1,0 +1,68 @@
+{
+  "attempts_reviewed": 36,
+  "contract_fingerprint": "74c123e1b442a33c3628f0ad5207fc12fe3687847225f8a4962db571761fe271",
+  "generated_at_utc": "2026-07-21T23:55:01.685312+00:00",
+  "review_set_fingerprint": "a584db1c9c35aaaa628201c1cfe4e6c81c6308e1fd8252d1d94557db69dec0a0",
+  "reviewer_id": "Dums",
+  "selection_status": "not_performed_phase_6_step_3",
+  "thresholds": {
+    "critical_failure_rate_max": 0.05,
+    "human_weighted_score_min": 3.2
+  },
+  "variants": [
+    {
+      "attempts_reviewed": 12,
+      "critical_failure_rate": 0.0833,
+      "dimension_means": {
+        "citation_quality": 3.6667,
+        "completeness": 3.6667,
+        "groundedness": 3.6667,
+        "mode_fulfillment": 3.5,
+        "relevance_clarity": 3.25,
+        "uncertainty_handling": 3.6667
+      },
+      "human_pass_rate": 0.9167,
+      "human_threshold_gate_met": false,
+      "mean_weighted_score": 3.5917,
+      "response_contract_failures": 1,
+      "reviewer_critical_failures": 1,
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempts_reviewed": 12,
+      "critical_failure_rate": 0.25,
+      "dimension_means": {
+        "citation_quality": 3.0,
+        "completeness": 2.8333,
+        "groundedness": 3.0,
+        "mode_fulfillment": 3.0,
+        "relevance_clarity": 2.6667,
+        "uncertainty_handling": 2.8333
+      },
+      "human_pass_rate": 0.75,
+      "human_threshold_gate_met": false,
+      "mean_weighted_score": 2.925,
+      "response_contract_failures": 3,
+      "reviewer_critical_failures": 3,
+      "variant_id": "evidence_first_v1"
+    },
+    {
+      "attempts_reviewed": 12,
+      "critical_failure_rate": 0.1667,
+      "dimension_means": {
+        "citation_quality": 3.3333,
+        "completeness": 3.1667,
+        "groundedness": 3.3333,
+        "mode_fulfillment": 3.3333,
+        "relevance_clarity": 3.25,
+        "uncertainty_handling": 3.1667
+      },
+      "human_pass_rate": 0.8333,
+      "human_threshold_gate_met": false,
+      "mean_weighted_score": 3.2833,
+      "response_contract_failures": 2,
+      "reviewer_critical_failures": 2,
+      "variant_id": "production_baseline_v1"
+    }
+  ]
+}

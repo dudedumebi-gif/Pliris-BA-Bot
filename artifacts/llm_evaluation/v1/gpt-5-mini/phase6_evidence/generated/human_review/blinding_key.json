@@ -1,0 +1,335 @@
+{
+  "assignments": [
+    {
+      "attempt_id": "grounded_traceability_definition::evidence_first_v1::r1",
+      "case_id": "grounded_traceability_definition",
+      "repetition": 1,
+      "response_label": "Answer A",
+      "response_status": "accepted",
+      "review_id": "6f4133350c435618ef8bd0b4",
+      "variant_id": "evidence_first_v1"
+    },
+    {
+      "attempt_id": "grounded_traceability_definition::decision_ready_v1::r1",
+      "case_id": "grounded_traceability_definition",
+      "repetition": 1,
+      "response_label": "Answer B",
+      "response_status": "accepted",
+      "review_id": "5193c7c897eb811379226e8f",
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempt_id": "grounded_traceability_definition::production_baseline_v1::r1",
+      "case_id": "grounded_traceability_definition",
+      "repetition": 1,
+      "response_label": "Answer C",
+      "response_status": "accepted",
+      "review_id": "bdcc1cbbf0ad4d70802f8a37",
+      "variant_id": "production_baseline_v1"
+    },
+    {
+      "attempt_id": "grounded_prioritization_factors::production_baseline_v1::r1",
+      "case_id": "grounded_prioritization_factors",
+      "repetition": 1,
+      "response_label": "Answer A",
+      "response_status": "accepted",
+      "review_id": "19642a94fac90ff139252cda",
+      "variant_id": "production_baseline_v1"
+    },
+    {
+      "attempt_id": "grounded_prioritization_factors::decision_ready_v1::r1",
+      "case_id": "grounded_prioritization_factors",
+      "repetition": 1,
+      "response_label": "Answer B",
+      "response_status": "accepted",
+      "review_id": "deb019c926f61b25df2a8e4a",
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempt_id": "grounded_prioritization_factors::evidence_first_v1::r1",
+      "case_id": "grounded_prioritization_factors",
+      "repetition": 1,
+      "response_label": "Answer C",
+      "response_status": "accepted",
+      "review_id": "a819e74061b5ae39abef68f1",
+      "variant_id": "evidence_first_v1"
+    },
+    {
+      "attempt_id": "comparison_validation_verification::production_baseline_v1::r1",
+      "case_id": "comparison_validation_verification",
+      "repetition": 1,
+      "response_label": "Answer A",
+      "response_status": "accepted",
+      "review_id": "5a15c0d137241d8cf95db36d",
+      "variant_id": "production_baseline_v1"
+    },
+    {
+      "attempt_id": "comparison_validation_verification::evidence_first_v1::r1",
+      "case_id": "comparison_validation_verification",
+      "repetition": 1,
+      "response_label": "Answer B",
+      "response_status": "contract_failure",
+      "review_id": "d9c54c2936a635e5455306ee",
+      "variant_id": "evidence_first_v1"
+    },
+    {
+      "attempt_id": "comparison_validation_verification::decision_ready_v1::r1",
+      "case_id": "comparison_validation_verification",
+      "repetition": 1,
+      "response_label": "Answer C",
+      "response_status": "accepted",
+      "review_id": "217d52e03b31082a1a2627b1",
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempt_id": "comparison_traceability_maintenance::decision_ready_v1::r1",
+      "case_id": "comparison_traceability_maintenance",
+      "repetition": 1,
+      "response_label": "Answer A",
+      "response_status": "accepted",
+      "review_id": "ba86f30fb616a50295beea89",
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempt_id": "comparison_traceability_maintenance::evidence_first_v1::r1",
+      "case_id": "comparison_traceability_maintenance",
+      "repetition": 1,
+      "response_label": "Answer B",
+      "response_status": "accepted",
+      "review_id": "d83d46913bb2a90fae6b2d7c",
+      "variant_id": "evidence_first_v1"
+    },
+    {
+      "attempt_id": "comparison_traceability_maintenance::production_baseline_v1::r1",
+      "case_id": "comparison_traceability_maintenance",
+      "repetition": 1,
+      "response_label": "Answer C",
+      "response_status": "accepted",
+      "review_id": "48f9174ce6df26bcaadaa2ed",
+      "variant_id": "production_baseline_v1"
+    },
+    {
+      "attempt_id": "scenario_approved_requirement_change::decision_ready_v1::r1",
+      "case_id": "scenario_approved_requirement_change",
+      "repetition": 1,
+      "response_label": "Answer A",
+      "response_status": "accepted",
+      "review_id": "1aab0093fcbb9969ac56c2ee",
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempt_id": "scenario_approved_requirement_change::evidence_first_v1::r1",
+      "case_id": "scenario_approved_requirement_change",
+      "repetition": 1,
+      "response_label": "Answer B",
+      "response_status": "contract_failure",
+      "review_id": "eefb1bf4d1dd896ee832fc36",
+      "variant_id": "evidence_first_v1"
+    },
+    {
+      "attempt_id": "scenario_approved_requirement_change::production_baseline_v1::r1",
+      "case_id": "scenario_approved_requirement_change",
+      "repetition": 1,
+      "response_label": "Answer C",
+      "response_status": "accepted",
+      "review_id": "0ed7fe5d5c55bd20e797fdce",
+      "variant_id": "production_baseline_v1"
+    },
+    {
+      "attempt_id": "scenario_stakeholder_unavailable::decision_ready_v1::r1",
+      "case_id": "scenario_stakeholder_unavailable",
+      "repetition": 1,
+      "response_label": "Answer A",
+      "response_status": "contract_failure",
+      "review_id": "9b29effb11f835454d2d1b4f",
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempt_id": "scenario_stakeholder_unavailable::production_baseline_v1::r1",
+      "case_id": "scenario_stakeholder_unavailable",
+      "repetition": 1,
+      "response_label": "Answer B",
+      "response_status": "contract_failure",
+      "review_id": "0f0c67734e6e8e6797ff4fa1",
+      "variant_id": "production_baseline_v1"
+    },
+    {
+      "attempt_id": "scenario_stakeholder_unavailable::evidence_first_v1::r1",
+      "case_id": "scenario_stakeholder_unavailable",
+      "repetition": 1,
+      "response_label": "Answer C",
+      "response_status": "accepted",
+      "review_id": "40cc817ba2f0af22aff2aaf7",
+      "variant_id": "evidence_first_v1"
+    },
+    {
+      "attempt_id": "outline_traceability_matrix::decision_ready_v1::r1",
+      "case_id": "outline_traceability_matrix",
+      "repetition": 1,
+      "response_label": "Answer A",
+      "response_status": "accepted",
+      "review_id": "94d3be1186ff3f190bb84602",
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempt_id": "outline_traceability_matrix::production_baseline_v1::r1",
+      "case_id": "outline_traceability_matrix",
+      "repetition": 1,
+      "response_label": "Answer B",
+      "response_status": "contract_failure",
+      "review_id": "b955ca1dfcdcec229fd24682",
+      "variant_id": "production_baseline_v1"
+    },
+    {
+      "attempt_id": "outline_traceability_matrix::evidence_first_v1::r1",
+      "case_id": "outline_traceability_matrix",
+      "repetition": 1,
+      "response_label": "Answer C",
+      "response_status": "accepted",
+      "review_id": "5c832baf81aebe2bd68da581",
+      "variant_id": "evidence_first_v1"
+    },
+    {
+      "attempt_id": "outline_stakeholder_analysis::evidence_first_v1::r1",
+      "case_id": "outline_stakeholder_analysis",
+      "repetition": 1,
+      "response_label": "Answer A",
+      "response_status": "contract_failure",
+      "review_id": "d7f79de52cd0bf9f23cfc06e",
+      "variant_id": "evidence_first_v1"
+    },
+    {
+      "attempt_id": "outline_stakeholder_analysis::decision_ready_v1::r1",
+      "case_id": "outline_stakeholder_analysis",
+      "repetition": 1,
+      "response_label": "Answer B",
+      "response_status": "accepted",
+      "review_id": "642df58cbfd1531a5bb5e195",
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempt_id": "outline_stakeholder_analysis::production_baseline_v1::r1",
+      "case_id": "outline_stakeholder_analysis",
+      "repetition": 1,
+      "response_label": "Answer C",
+      "response_status": "accepted",
+      "review_id": "9b1bda01b10cb3731e466b4d",
+      "variant_id": "production_baseline_v1"
+    },
+    {
+      "attempt_id": "conflict_baseline_retention::evidence_first_v1::r1",
+      "case_id": "conflict_baseline_retention",
+      "repetition": 1,
+      "response_label": "Answer A",
+      "response_status": "accepted",
+      "review_id": "ac14b721b93050fcd36fe1c1",
+      "variant_id": "evidence_first_v1"
+    },
+    {
+      "attempt_id": "conflict_baseline_retention::decision_ready_v1::r1",
+      "case_id": "conflict_baseline_retention",
+      "repetition": 1,
+      "response_label": "Answer B",
+      "response_status": "accepted",
+      "review_id": "504465a39ba81a1295bdf0ee",
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempt_id": "conflict_baseline_retention::production_baseline_v1::r1",
+      "case_id": "conflict_baseline_retention",
+      "repetition": 1,
+      "response_label": "Answer C",
+      "response_status": "accepted",
+      "review_id": "2eeffe664712389d5e236e07",
+      "variant_id": "production_baseline_v1"
+    },
+    {
+      "attempt_id": "conflict_approval_scope::decision_ready_v1::r1",
+      "case_id": "conflict_approval_scope",
+      "repetition": 1,
+      "response_label": "Answer A",
+      "response_status": "accepted",
+      "review_id": "662bef3abb9314580b813833",
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempt_id": "conflict_approval_scope::evidence_first_v1::r1",
+      "case_id": "conflict_approval_scope",
+      "repetition": 1,
+      "response_label": "Answer B",
+      "response_status": "accepted",
+      "review_id": "90d9c5732bd9ad9f6f2882a0",
+      "variant_id": "evidence_first_v1"
+    },
+    {
+      "attempt_id": "conflict_approval_scope::production_baseline_v1::r1",
+      "case_id": "conflict_approval_scope",
+      "repetition": 1,
+      "response_label": "Answer C",
+      "response_status": "accepted",
+      "review_id": "f38ba646858d66746654d686",
+      "variant_id": "production_baseline_v1"
+    },
+    {
+      "attempt_id": "grounded_partial_evidence::decision_ready_v1::r1",
+      "case_id": "grounded_partial_evidence",
+      "repetition": 1,
+      "response_label": "Answer A",
+      "response_status": "accepted",
+      "review_id": "749afeb67f58e5a95d2a3ab2",
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempt_id": "grounded_partial_evidence::production_baseline_v1::r1",
+      "case_id": "grounded_partial_evidence",
+      "repetition": 1,
+      "response_label": "Answer B",
+      "response_status": "accepted",
+      "review_id": "df1f3cc0a34cb775eeca30d7",
+      "variant_id": "production_baseline_v1"
+    },
+    {
+      "attempt_id": "grounded_partial_evidence::evidence_first_v1::r1",
+      "case_id": "grounded_partial_evidence",
+      "repetition": 1,
+      "response_label": "Answer C",
+      "response_status": "accepted",
+      "review_id": "e3174d85076a14c727820b0d",
+      "variant_id": "evidence_first_v1"
+    },
+    {
+      "attempt_id": "insufficient_vendor_threshold::production_baseline_v1::r1",
+      "case_id": "insufficient_vendor_threshold",
+      "repetition": 1,
+      "response_label": "Answer A",
+      "response_status": "accepted",
+      "review_id": "8d4d8cf58f3b0f19f6919a01",
+      "variant_id": "production_baseline_v1"
+    },
+    {
+      "attempt_id": "insufficient_vendor_threshold::decision_ready_v1::r1",
+      "case_id": "insufficient_vendor_threshold",
+      "repetition": 1,
+      "response_label": "Answer B",
+      "response_status": "accepted",
+      "review_id": "acfd50c177a627dec9abf948",
+      "variant_id": "decision_ready_v1"
+    },
+    {
+      "attempt_id": "insufficient_vendor_threshold::evidence_first_v1::r1",
+      "case_id": "insufficient_vendor_threshold",
+      "repetition": 1,
+      "response_label": "Answer C",
+      "response_status": "accepted",
+      "review_id": "52a5fa409e5d3cc4b88b0887",
+      "variant_id": "evidence_first_v1"
+    }
+  ],
+  "attempt_count": 36,
+  "blinding_algorithm": "sha256_case_variant_order_v1",
+  "contract_fingerprint": "74c123e1b442a33c3628f0ad5207fc12fe3687847225f8a4962db571761fe271",
+  "frozen_contexts_sha256": "1c91aaf85ec784331076d625090fab24d1bca073c7773a6cd7a2cc837fa62bff",
+  "raw_outputs_sha256": "5f89ae348743d8765b2a57a9d0d9dc6bb54c66d9f6474eb22aaf8616b9ed5f02",
+  "review_set_fingerprint": "a584db1c9c35aaaa628201c1cfe4e6c81c6308e1fd8252d1d94557db69dec0a0",
+  "version": 1
+}
