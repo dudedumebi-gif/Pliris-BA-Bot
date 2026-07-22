@@ -119,3 +119,47 @@ def test_verify_rejects_changed_decision(tmp_path: Path) -> None:
     checksum_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     with pytest.raises(EvidencePackageError, match="decision status"):
         verify_evidence_package(tmp_path)
+
+
+def test_count_frozen_context_records_excludes_manifest(tmp_path):
+    from evaluation.llm_evidence_package import _count_frozen_context_records
+
+    path = tmp_path / "frozen_contexts.jsonl"
+    path.write_text(
+        "\n".join(
+            [
+                '{"record_type":"manifest","case_count":2}',
+                '{"record_type":"context","case_id":"case-1"}',
+                '{"record_type":"context","case_id":"case-2"}',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    assert _count_frozen_context_records(path) == 2
+
+
+def test_count_frozen_context_records_rejects_manifest_mismatch(tmp_path):
+    from evaluation.llm_evidence_package import (
+        EvidencePackageError,
+        _count_frozen_context_records,
+    )
+
+    path = tmp_path / "frozen_contexts.jsonl"
+    path.write_text(
+        "\n".join(
+            [
+                '{"record_type":"manifest","case_count":2}',
+                '{"record_type":"context","case_id":"case-1"}',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        EvidencePackageError,
+        match="manifest case_count does not match",
+    ):
+        _count_frozen_context_records(path)

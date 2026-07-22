@@ -153,6 +153,40 @@ def _count_jsonl(path: Path) -> int:
         raise EvidencePackageError(f"Required JSONL file not found: {path}") from exc
 
 
+def _count_frozen_context_records(path: Path) -> int:
+    try:
+        rows = [
+            json.loads(line)
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+    except FileNotFoundError as exc:
+        raise EvidencePackageError(f"Required JSONL file not found: {path}") from exc
+    except json.JSONDecodeError as exc:
+        raise EvidencePackageError(f"Invalid JSONL file: {path}") from exc
+
+    manifests = [row for row in rows if row.get("record_type") == "manifest"]
+    contexts = [row for row in rows if row.get("record_type") == "context"]
+    unknown = [
+        row.get("record_type")
+        for row in rows
+        if row.get("record_type") not in {"manifest", "context"}
+    ]
+
+    if len(manifests) != 1:
+        raise EvidencePackageError(
+            f"Frozen context file must contain exactly one manifest; found {len(manifests)}."
+        )
+    if unknown:
+        raise EvidencePackageError(f"Frozen context file contains unknown record types: {unknown}")
+    if manifests[0].get("case_count") != len(contexts):
+        raise EvidencePackageError(
+            "Frozen context manifest case_count does not match context rows."
+        )
+
+    return len(contexts)
+
+
 def _count_csv_rows(path: Path) -> int:
     try:
         with path.open("r", encoding="utf-8-sig", newline="") as handle:
@@ -213,7 +247,7 @@ def _validate_evidence(repo_root: Path) -> dict[str, Any]:
     decision = _load_json(artifact_root / "finalist_confirmation/human_review/decision_record.json")
 
     counts = {
-        "frozen_contexts": _count_jsonl(artifact_root / "frozen_contexts.jsonl"),
+        "frozen_contexts": _count_frozen_context_records(artifact_root / "frozen_contexts.jsonl"),
         "primary_raw_outputs": _count_jsonl(primary_raw),
         "primary_automated_scores": _count_csv_rows(artifact_root / "primary/automated_scores.csv"),
         "primary_human_scores": _count_csv_rows(artifact_root / "human_review/scores.csv"),
