@@ -1,95 +1,136 @@
-import httpx
+from __future__ import annotations
+
+from uuid import uuid4
+
 import streamlit as st
-from components.chat_message import (
+
+from app.components.chat_message import (
     render_assistant_message,
     render_user_message,
 )
+from app.services.chat_client import ChatClient, ChatServiceError
+from app.ui_config import UIMode, load_ui_settings
 
-st.set_page_config(page_title="Chat - Pliris BA Bot", page_icon="💬", layout="wide")
+settings = load_ui_settings()
 
-# Initialize chat history
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+if "pliris_messages" not in st.session_state:
+    st.session_state.pliris_messages = []
 
-if "conversation_id" not in st.session_state:
-    st.session_state.conversation_id = None
+if "pliris_conversation_id" not in st.session_state:
+    st.session_state.pliris_conversation_id = None
 
-# Page header
-st.markdown("# 💬 Chat with your Documents")
-st.markdown(
-    "Ask questions about your business documents and get AI-powered answers with citations."
+if "pliris_guest_session_id" not in st.session_state:
+    st.session_state.pliris_guest_session_id = str(uuid4())
+
+st.title("💬 Pliris BA Bot")
+st.write(
+    "Ask a question about Business Analysis, Business Systems Analysis, or Project Management."
 )
 
-# Chat interface
-for message in st.session_state.messages:
+with st.sidebar:
+    st.markdown("### Pliris")
+    if settings.ui_mode is UIMode.PUBLIC:
+        st.caption("Public review session")
+    else:
+        st.caption("Developer chat workspace")
+
+    if st.button("Clear conversation", use_container_width=True):
+        st.session_state.pliris_messages = []
+        st.session_state.pliris_conversation_id = None
+        st.rerun()
+
+    st.caption(
+        "Clearing the conversation does not reset public usage limits for this browser session."
+    )
+
+if not st.session_state.pliris_messages:
+    st.info(
+        "Try asking about requirements elicitation, stakeholder analysis, "
+        "traceability, process modelling, acceptance criteria, delivery "
+        "planning, or project risks."
+    )
+
+for message in st.session_state.pliris_messages:
     if message["role"] == "user":
         render_user_message(message["content"])
-    elif message["role"] == "assistant":
-        render_assistant_message(
-            message["content"],
-            citations=message.get("citations"),
-            confidence=message.get("confidence"),
+        continue
+
+    render_assistant_message(
+        message["content"],
+        citations=message.get("citations"),
+        confidence=message.get("confidence"),
+    )
+
+    if message.get("insufficient_evidence"):
+        st.info(
+            "Pliris did not find enough grounded evidence in the available "
+            "knowledge base for that answer."
         )
 
-# Chat input
-if prompt := st.chat_input("Ask a question about your documents..."):
-    # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    if settings.ui_mode is UIMode.DEVELOPER:
+        with st.expander("Developer response details"):
+            st.json(
+                {
+                    "scope": message.get("scope"),
+                    "conversation_id": message.get("conversation_id"),
+                    "metadata": message.get("metadata", {}),
+                }
+            )
+
+prompt = st.chat_input(
+    "Ask Pliris a BA, BSA, or PM question",
+    max_chars=2000,
+)
+
+if prompt:
+    st.session_state.pliris_messages.append({"role": "user", "content": prompt})
     render_user_message(prompt)
 
-    # Get response from API
-    with st.spinner("Searching and generating response..."):
+    client = ChatClient(settings)
+
+    with st.spinner("Reviewing the knowledge base and preparing a grounded response..."):
         try:
-
-            async def get_response():
-                async with httpx.AsyncClient() as client:
-                    response = await client.post(
-                        "http://localhost:8000/api/chat",
-                        json={
-                            "message": prompt,
-                            "conversation_id": st.session_state.conversation_id,
-                        },
-                        timeout=60.0,
-                    )
-                    response.raise_for_status()
-                    return response.json()
-
-            # For simplicity in Streamlit, we'll use sync request
-            with httpx.Client() as client:
-                api_response = client.post(
-                    "http://localhost:8000/api/chat",
-                    json={"message": prompt, "conversation_id": st.session_state.conversation_id},
-                    timeout=60.0,
-                )
-                api_response.raise_for_status()
-                data = api_response.json()
-
-            # Update conversation ID
-            st.session_state.conversation_id = data.get("conversation_id")
-
-            # Add assistant response to chat history
+            reply = client.send_message(
+                message=prompt,
+                conversation_id=st.session_state.pliris_conversation_id,
+                session_id=st.session_state.pliris_guest_session_id,
+            )
+        except ChatServiceError as exc:
+            st.error(exc.user_message)
+            if exc.retry_after_seconds is not None:
+                st.caption(f"Try again in approximately {exc.retry_after_seconds} seconds.")
+        else:
+            st.session_state.pliris_conversation_id = reply.conversation_id
             assistant_message = {
                 "role": "assistant",
-                "content": data.get("response", ""),
-                "citations": data.get("citations", []),
-                "confidence": data.get("confidence", 0.0),
+                "content": reply.response,
+                "citations": reply.citations,
+                "confidence": reply.confidence,
+                "scope": reply.scope,
+                "conversation_id": reply.conversation_id,
+                "metadata": reply.metadata,
+                "insufficient_evidence": bool(reply.metadata.get("insufficient_evidence", False)),
             }
-            st.session_state.messages.append(assistant_message)
+            st.session_state.pliris_messages.append(assistant_message)
 
-            # Render assistant response
             render_assistant_message(
                 assistant_message["content"],
                 citations=assistant_message["citations"],
                 confidence=assistant_message["confidence"],
             )
 
-        except httpx.HTTPError as e:
-            st.error(f"Error communicating with API: {e}")
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
+            if assistant_message["insufficient_evidence"]:
+                st.info(
+                    "Pliris did not find enough grounded evidence in the "
+                    "available knowledge base for that answer."
+                )
 
-# Clear conversation button
-if st.button("Clear Conversation"):
-    st.session_state.messages = []
-    st.session_state.conversation_id = None
-    st.rerun()
+            if settings.ui_mode is UIMode.DEVELOPER:
+                with st.expander("Developer response details"):
+                    st.json(
+                        {
+                            "scope": reply.scope,
+                            "conversation_id": reply.conversation_id,
+                            "metadata": reply.metadata,
+                        }
+                    )
