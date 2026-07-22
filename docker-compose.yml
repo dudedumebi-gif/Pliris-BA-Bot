@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   api:
@@ -7,10 +7,21 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/pliris
+      - APP_ENV=${APP_ENV:-development}
       - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY}
+      - SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY}
+      - SUPABASE_DB_URL=${SUPABASE_DB_URL:-postgresql://postgres:password@db:5432/pliris}
+      - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-knowledge-base}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL:-gpt-5-mini}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      - OPENAI_EMBEDDING_DIMENSIONS=${OPENAI_EMBEDDING_DIMENSIONS:-1536}
+      - GUEST_UI_SHARED_SECRET=${GUEST_UI_SHARED_SECRET}
+      - GUEST_REQUEST_WINDOW_SECONDS=${GUEST_REQUEST_WINDOW_SECONDS:-60}
+      - GUEST_REQUESTS_PER_WINDOW=${GUEST_REQUESTS_PER_WINDOW:-5}
+      - GUEST_MAX_REQUESTS_PER_SESSION=${GUEST_MAX_REQUESTS_PER_SESSION:-40}
+      - GUEST_SESSION_RETENTION_SECONDS=${GUEST_SESSION_RETENTION_SECONDS:-86400}
     volumes:
       - ./logs:/app/logs
       - ./outputs:/app/outputs
@@ -25,8 +36,7 @@ services:
       - "8501:8501"
     environment:
       - API_URL=http://api:8000
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - GUEST_UI_SHARED_SECRET=${GUEST_UI_SHARED_SECRET}
     volumes:
       - ./logs:/app/logs
     depends_on:

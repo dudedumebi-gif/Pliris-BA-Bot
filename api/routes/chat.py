@@ -6,6 +6,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from api.guest_access import get_guest_user
 from api.schemas.chat import ChatRequest, ChatResponse
 from pliris.agents.grounded_orchestrator import (
     GroundedResponseOrchestrator,
@@ -56,13 +57,8 @@ def get_prompt_injection_detector() -> PromptInjectionDetector:
     return PromptInjectionDetector()
 
 
-def get_system_user() -> dict[str, str]:
-    """Return the current application user until authentication is added."""
-
-    return {
-        "id": "system",
-        "name": "System User",
-    }
+# Compatibility name retained for existing route tests and dependency overrides.
+get_system_user = get_guest_user
 
 
 UserDependency = Annotated[
@@ -113,8 +109,8 @@ async def chat(
 
         if not scope_result["in_scope"]:
             logger.info(
-                "Query classified out of scope: %s",
-                request.message,
+                "Query classified out of scope for user %s",
+                user["id"],
             )
             return ChatResponse(
                 response=OUT_OF_SCOPE_RESPONSE,
@@ -154,8 +150,8 @@ async def chat(
                 "response_id": result_data["response_id"],
                 "usage": result_data["usage"],
                 "request_mode": request_classification.mode.value,
-                "request_mode_confidence": (request_classification.confidence),
-                "request_mode_rule": (request_classification.matched_rule),
+                "request_mode_confidence": request_classification.confidence,
+                "request_mode_rule": request_classification.matched_rule,
                 **result_data["metadata"],
             },
         )
