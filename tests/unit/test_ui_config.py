@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from app import ui_config
 from app.ui_config import UIConfigurationError, UIMode, load_ui_settings
 
 
@@ -33,6 +34,33 @@ def test_ui_settings_normalize_hosted_configuration() -> None:
     assert settings.ui_mode is UIMode.DEVELOPER
     assert settings.guest_ui_shared_secret == "ui-secret"
     assert settings.developer_ui_access_key == "developer-secret"
+
+
+def test_ui_settings_load_local_dotenv_with_process_override(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "APP_ENV=development\n"
+        "API_URL=http://from-file:8000\n"
+        "PLIRIS_UI_MODE=developer\n"
+        "DEVELOPER_UI_ACCESS_KEY=local-developer-key\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(ui_config, "ENV_FILE", env_file)
+    monkeypatch.setattr(
+        ui_config.os,
+        "environ",
+        {"API_URL": "https://process-override.example.test"},
+    )
+
+    settings = load_ui_settings()
+
+    assert settings.api_url == "https://process-override.example.test"
+    assert settings.ui_mode is UIMode.DEVELOPER
+    assert settings.developer_ui_access_key == "local-developer-key"
 
 
 @pytest.mark.parametrize(

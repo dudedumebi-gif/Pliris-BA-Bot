@@ -4,7 +4,12 @@ import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 from urllib.parse import urlparse
+
+from dotenv import dotenv_values
+
+ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 
 
 class UIConfigurationError(ValueError):
@@ -35,7 +40,7 @@ def load_ui_settings(
 ) -> UISettings:
     """Load and validate Streamlit-only configuration."""
 
-    values = os.environ if environ is None else environ
+    values = _runtime_values() if environ is None else environ
 
     app_env = values.get("APP_ENV", "development").strip().lower()
     api_url = values.get("API_URL", "http://localhost:8000").strip().rstrip("/")
@@ -77,6 +82,16 @@ def load_ui_settings(
         guest_ui_shared_secret=guest_secret,
         developer_ui_access_key=developer_key,
     )
+
+
+def _runtime_values() -> dict[str, str]:
+    """Merge local dotenv values with process variables taking precedence."""
+
+    values = {
+        key: value for key, value in dotenv_values(ENV_FILE).items() if isinstance(value, str)
+    }
+    values.update(os.environ)
+    return values
 
 
 def _optional_secret(value: str | None) -> str | None:

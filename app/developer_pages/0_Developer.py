@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import streamlit as st
 
+from app.developer_access import require_developer_page
+
+require_developer_page()
+
 st.title("🛠️ Pliris Developer Console")
 st.caption("Protected operational workspace")
 

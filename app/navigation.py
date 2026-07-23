@@ -16,14 +16,14 @@ class PageSpec:
 
 
 PUBLIC_CHAT_PAGE = PageSpec(
-    path="pages/1_Chat.py",
+    path="app/pages/1_Chat.py",
     title="Chat",
     icon="💬",
     default=True,
 )
 
 DEVELOPER_HOME_PAGE = PageSpec(
-    path="pages/0_Developer.py",
+    path="app/developer_pages/0_Developer.py",
     title="Developer Console",
     icon="🛠️",
     default=True,

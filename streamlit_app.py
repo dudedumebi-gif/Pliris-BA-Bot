@@ -56,12 +56,24 @@ except UIConfigurationError:
     st.stop()
 
 if settings.ui_mode is UIMode.DEVELOPER:
-    if not st.session_state.get("developer_authenticated", False):
-        _render_developer_login(settings.developer_ui_access_key)
+    authenticated = bool(st.session_state.get("developer_authenticated", False))
+
+    if not authenticated:
+        login_page = st.Page(
+            lambda: _render_developer_login(settings.developer_ui_access_key),
+            title="Developer Access",
+            icon="🔐",
+            default=True,
+        )
+        st.navigation([login_page], position="hidden").run()
+        st.stop()
 
     with st.sidebar:
         st.caption("Protected developer interface")
-        if st.button("Lock developer interface", use_container_width=True):
+        if st.button(
+            "Lock developer interface",
+            use_container_width=True,
+        ):
             st.session_state["developer_authenticated"] = False
             st.rerun()
 

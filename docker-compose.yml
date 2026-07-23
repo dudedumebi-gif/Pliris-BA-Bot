@@ -42,7 +42,7 @@ services:
       - ./logs:/app/logs
     depends_on:
       - api
-    command: streamlit run app/Home.py --server.address 0.0.0.0 --server.port 8501
+    command: streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 8501
 
   streamlit-developer:
     profiles: ["developer"]
@@ -61,4 +61,4 @@ services:
       - ./logs:/app/logs
     depends_on:
       - api
-    command: streamlit run app/Home.py --server.address 0.0.0.0 --server.port 8501
+    command: streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 8501
