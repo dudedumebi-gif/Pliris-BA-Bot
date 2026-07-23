@@ -23,6 +23,9 @@ from pliris.agents.request_classifier import RequestClassifier
 from pliris.database.repositories.conversation_history import (
     ConversationHistoryRepository,
 )
+from pliris.database.repositories.conversation_turns import (
+    ConversationTurnRepository,
+)
 from pliris.database.repositories.grounded_persistence import (
     GroundedPersistenceRepository,
 )
@@ -158,6 +161,7 @@ async def chat(
     *,
     conversation_tokens: ConversationTokenManager | None = None,
     conversation_history: ConversationHistoryRepository | None = None,
+    conversation_turns: ConversationTurnRepository | None = None,
     context_resolver: ConversationContextResolver | None = None,
 ) -> ChatResponse:
     """Process a user message through the guarded grounded pipeline."""
@@ -200,6 +204,20 @@ async def chat(
         scope_metadata = _scope_metadata(scope_result)
 
         if scope_result.get("requires_clarification", False):
+            if session_id is not None and conversation_id is None:
+                token_manager = conversation_tokens or get_conversation_token_manager()
+                conversation_id = token_manager.issue(session_id)
+
+            if session_id is not None and conversation_id is not None:
+                turn_repository = conversation_turns or ConversationTurnRepository()
+                await turn_repository.persist_turn(
+                    client_session_id=conversation_id,
+                    user_message=request.message,
+                    assistant_message=SCOPE_CLARIFICATION_RESPONSE,
+                    scope_status="borderline",
+                    scope_confidence=_scope_confidence(scope_result) or 0.0,
+                )
+
             return ChatResponse(
                 response=SCOPE_CLARIFICATION_RESPONSE,
                 citations=[],
