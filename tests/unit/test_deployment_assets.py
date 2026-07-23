@@ -44,6 +44,7 @@ def test_render_blueprint_has_public_mode_and_server_side_secrets() -> None:
     assert "value: public" in content
     assert "key: GUEST_UI_SHARED_SECRET" in content
     assert "generateValue: true" in content
+    assert "maxShutdownDelaySeconds" not in content
 
     for secret in (
         "OPENAI_API_KEY",
