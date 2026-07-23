@@ -1,25 +1,28 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    postgresql-client \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-COPY pyproject.toml ./
-RUN pip install --no-cache-dir -e .
-
-# Copy application code
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p logs outputs data/private
+RUN python -m pip install --upgrade pip setuptools wheel \
+    && python -m pip install .
 
-# Expose ports
-EXPOSE 8000 8501
+RUN chmod +x scripts/start_render.sh \
+    && mkdir -p logs outputs data/private \
+    && useradd --create-home --shell /bin/bash pliris \
+    && chown -R pliris:pliris /app
 
-# Default command
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+USER pliris
+
+EXPOSE 10000
+
+CMD ["bash", "scripts/start_render.sh"]

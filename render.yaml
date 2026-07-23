@@ -1,0 +1,58 @@
+services:
+  - type: web
+    name: pliris-ba-bot-public
+    runtime: docker
+    plan: free
+    region: ohio
+    branch: feature-interface-monitoring
+    autoDeployTrigger: commit
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: bash scripts/start_render.sh
+    healthCheckPath: /
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PLIRIS_UI_MODE
+        value: public
+      - key: PLIRIS_INTERNAL_API_PORT
+        value: "8000"
+      - key: API_TIMEOUT_SECONDS
+        value: "90"
+      - key: GUEST_UI_SHARED_SECRET
+        generateValue: true
+      - key: GUEST_REQUEST_WINDOW_SECONDS
+        value: "60"
+      - key: GUEST_REQUESTS_PER_WINDOW
+        value: "5"
+      - key: GUEST_MAX_REQUESTS_PER_SESSION
+        value: "25"
+      - key: GUEST_SESSION_RETENTION_SECONDS
+        value: "86400"
+      - key: POSTGRES_POOL_MIN_SIZE
+        value: "0"
+      - key: POSTGRES_POOL_MAX_SIZE
+        value: "3"
+      - key: POSTGRES_CONNECT_TIMEOUT_SECONDS
+        value: "15"
+      - key: OPENAI_CHAT_MODEL
+        value: gpt-5-mini
+      - key: OPENAI_EMBEDDING_MODEL
+        value: text-embedding-3-small
+      - key: OPENAI_EMBEDDING_DIMENSIONS
+        value: "1536"
+      - key: SUPABASE_STORAGE_BUCKET
+        value: knowledge-base
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: SUPABASE_DB_URL
+        sync: false
