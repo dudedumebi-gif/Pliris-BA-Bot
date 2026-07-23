@@ -37,6 +37,12 @@ OUT_OF_SCOPE_RESPONSE = (
     "Please ask a question related to one of these areas."
 )
 
+SCOPE_CLARIFICATION_RESPONSE = (
+    "Please clarify how this question relates to Business Analysis, "
+    "Business Systems Analysis, or Project Management so Pliris can "
+    "route it correctly."
+)
+
 router = APIRouter()
 
 
@@ -191,6 +197,22 @@ async def chat(
             resolution = resolver.resolve(request.message, history)
 
         scope_result = await scope_classifier.classify(resolution.scope_query)
+        scope_metadata = _scope_metadata(scope_result)
+
+        if scope_result.get("requires_clarification", False):
+            return ChatResponse(
+                response=SCOPE_CLARIFICATION_RESPONSE,
+                citations=[],
+                confidence=0.0,
+                scope=str(scope_result["category"]),
+                conversation_id=conversation_id,
+                metadata={
+                    "insufficient_evidence": False,
+                    "guardrail": "scope_clarification",
+                    "scope_decision": scope_metadata,
+                    "conversation_context": resolution.metadata(),
+                },
+            )
 
         if not scope_result["in_scope"]:
             logger.info(
@@ -206,6 +228,7 @@ async def chat(
                 metadata={
                     "insufficient_evidence": False,
                     "guardrail": "out_of_scope",
+                    "scope_decision": scope_metadata,
                     "conversation_context": resolution.metadata(),
                 },
             )
@@ -254,6 +277,7 @@ async def chat(
                 "request_mode": request_classification.mode.value,
                 "request_mode_confidence": (request_classification.confidence),
                 "request_mode_rule": request_classification.matched_rule,
+                "scope_decision": scope_metadata,
                 "conversation_context": resolution.metadata(),
                 **result_data["metadata"],
             },
@@ -322,6 +346,16 @@ def _document_id(context: dict[str, Any] | None) -> str | None:
 
     normalized = value.strip()
     return normalized or None
+
+
+def _scope_metadata(
+    scope_result: dict[str, Any],
+) -> dict[str, Any]:
+    """Return non-duplicative semantic routing metadata."""
+
+    return {
+        key: value for key, value in scope_result.items() if key not in {"category", "in_scope"}
+    }
 
 
 def _scope_confidence(
