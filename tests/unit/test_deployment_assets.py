@@ -5,7 +5,9 @@ def test_dockerfile_uses_supported_python_and_non_root_user() -> None:
     content = Path("Dockerfile").read_text(encoding="utf-8")
 
     assert content.startswith("FROM python:3.13-slim")
-    assert "python -m pip install ." in content
+    assert "ghcr.io/astral-sh/uv:0.11.30" in content
+    assert "uv sync --frozen --no-dev --no-install-project" in content
+    assert "python -m pip install ." not in content
     assert "USER pliris" in content
     assert 'CMD ["bash", "scripts/start_render.sh"]' in content
 
