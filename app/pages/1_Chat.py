@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import streamlit as st
 
+from app.chat_state import discard_failed_user_turn
 from app.components.chat_message import (
     render_assistant_message,
     render_user_message,
@@ -96,6 +97,10 @@ if prompt:
                 session_id=st.session_state.pliris_guest_session_id,
             )
         except ChatServiceError as exc:
+            discard_failed_user_turn(
+                st.session_state.pliris_messages,
+                prompt,
+            )
             st.error(exc.user_message)
             if exc.retry_after_seconds is not None:
                 st.caption(f"Try again in approximately {exc.retry_after_seconds} seconds.")
