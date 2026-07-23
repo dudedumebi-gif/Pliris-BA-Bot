@@ -216,3 +216,48 @@ async def test_chat_issues_bound_token_for_new_grounded_session() -> None:
 
     assert response.conversation_id is not None
     assert tokens.validate(response.conversation_id, session_id) == (response.conversation_id)
+
+
+@pytest.mark.asyncio
+async def test_chat_resolves_scope_clarification_reply_as_one_request() -> None:
+    session_id = str(uuid4())
+    tokens = ConversationTokenManager("test-secret")
+    token = tokens.issue(session_id)
+    history = FakeHistory(
+        [
+            {"role": "user", "content": "What does an analyst do?"},
+            {
+                "role": "assistant",
+                "content": "Please clarify the practice.",
+                "scope_status": "borderline",
+            },
+        ]
+    )
+    scope = FakeScope()
+    orchestrator = FakeOrchestrator(token)
+
+    response = await chat(
+        request=ChatRequest(
+            message="I'm talking about a financial business analyst.",
+            conversation_id=token,
+        ),
+        user={
+            "id": "guest-test",
+            "name": "Guest User",
+            "session_id": session_id,
+        },
+        orchestrator=orchestrator,
+        scope_classifier=scope,
+        request_classifier=FakeRequestClassifier(),
+        prompt_injection_detector=FakeDetector(),
+        conversation_tokens=tokens,
+        conversation_history=history,
+        context_resolver=ConversationContextResolver(),
+    )
+
+    assert response.metadata["conversation_context"]["context_used"] is True
+    assert "What does an analyst do?" in scope.messages[0]
+    assert "financial business analyst" in scope.messages[0]
+    call = orchestrator.calls[0]
+    assert "What does an analyst do?" in call["retrieval_query"]
+    assert "financial business analyst" in call["retrieval_query"]

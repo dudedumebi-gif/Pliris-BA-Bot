@@ -48,7 +48,10 @@ class ConversationHistoryRepository:
         with self.connection_factory() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
-                    select m.role, m.content
+                    select
+                      m.role,
+                      m.content,
+                      m.scope_status
                     from public.messages as m
                     join public.conversations as c
                       on c.id = m.conversation_id
@@ -61,10 +64,14 @@ class ConversationHistoryRepository:
             )
             rows = cursor.fetchall()
 
-        return [
-            {
+        messages: list[dict[str, str]] = []
+        for row in reversed(rows):
+            message = {
                 "role": str(row["role"]),
                 "content": str(row["content"]),
             }
-            for row in reversed(rows)
-        ]
+            scope_status = row.get("scope_status")
+            if isinstance(scope_status, str) and scope_status:
+                message["scope_status"] = scope_status
+            messages.append(message)
+        return messages

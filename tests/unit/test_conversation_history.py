@@ -64,3 +64,34 @@ async def test_history_reader_returns_chronological_bounded_messages() -> None:
         "v1.conversation.signature",
         6,
     )
+
+
+@pytest.mark.asyncio
+async def test_history_reader_preserves_internal_turn_marker() -> None:
+    cursor = FakeCursor(
+        [
+            {
+                "role": "assistant",
+                "content": "Please clarify.",
+                "scope_status": "borderline",
+            },
+            {
+                "role": "user",
+                "content": "What does an analyst do?",
+                "scope_status": None,
+            },
+        ]
+    )
+
+    @contextmanager
+    def connection_factory():
+        yield FakeConnection(cursor)
+
+    repository = ConversationHistoryRepository(connection_factory=connection_factory)
+    messages = await repository.get_recent_messages(
+        "v1.conversation.signature",
+        limit=6,
+    )
+
+    assert messages[-1]["scope_status"] == "borderline"
+    assert "m.scope_status" in cursor.executed[0][0]

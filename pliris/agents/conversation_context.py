@@ -62,6 +62,18 @@ class ConversationContextResolver:
         normalized_message = " ".join(message.split())
         bounded_history = self._bounded_history(history or [])
 
+        if bounded_history and self._awaiting_scope_clarification(bounded_history):
+            previous_user = self._latest_content(
+                bounded_history,
+                role="user",
+            )
+            if previous_user is not None:
+                return self._resolve_clarification_reply(
+                    message=normalized_message,
+                    previous_user=previous_user,
+                    history_message_count=len(bounded_history),
+                )
+
         if not bounded_history or not self._is_follow_up(normalized_message):
             return ConversationResolution(
                 original_message=normalized_message,
@@ -124,13 +136,56 @@ class ConversationContextResolver:
             cleaned = " ".join(content.split())
             if not cleaned:
                 continue
-            normalized.append(
-                {
-                    "role": role,
-                    "content": cleaned[: self.max_message_characters],
-                }
-            )
+            normalized_message = {
+                "role": role,
+                "content": cleaned[: self.max_message_characters],
+            }
+            scope_status = message.get("scope_status")
+            if isinstance(scope_status, str) and scope_status:
+                normalized_message["scope_status"] = scope_status[:128]
+            normalized.append(normalized_message)
         return normalized
+
+    @staticmethod
+    def _awaiting_scope_clarification(
+        history: list[dict[str, str]],
+    ) -> bool:
+        for message in reversed(history):
+            if message["role"] != "assistant":
+                continue
+            return message.get("scope_status") == "borderline"
+        return False
+
+    @staticmethod
+    def _resolve_clarification_reply(
+        *,
+        message: str,
+        previous_user: str,
+        history_message_count: int,
+    ) -> ConversationResolution:
+        previous_user = _CITATION_MARKER.sub("", previous_user)
+        scope_query = (
+            "Resolve the previously ambiguous user question using the "
+            "clarification supplied.\n"
+            f"Original question: {previous_user}\n"
+            f"User clarification: {message}"
+        )
+        retrieval_query = f"{previous_user}\nClarification: {message}"
+        generation_question = (
+            "Answer the original question using the user's clarification. "
+            "Treat both lines as one resolved request and use only the "
+            "supplied knowledge-base context.\n\n"
+            f"Original question: {previous_user}\n"
+            f"User clarification: {message}"
+        )
+        return ConversationResolution(
+            original_message=message,
+            scope_query=scope_query,
+            retrieval_query=retrieval_query,
+            generation_question=generation_question,
+            context_used=True,
+            history_message_count=history_message_count,
+        )
 
     @staticmethod
     def _is_follow_up(message: str) -> bool:

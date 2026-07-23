@@ -118,7 +118,14 @@ class ConversationTurnRepository:
                             scope_confidence,
                             citations
                         )
-                        values (%s, 'assistant', %s, %s, %s, '[]'::jsonb)
+                        values (
+                            %s,
+                            'assistant',
+                            %s,
+                            %s,
+                            %s,
+                            '[]'::jsonb
+                        )
                         """,
                         (
                             conversation_id,

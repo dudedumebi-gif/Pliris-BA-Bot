@@ -58,3 +58,47 @@ def test_follow_up_without_prior_user_message_remains_standalone() -> None:
     )
 
     assert result.context_used is False
+
+
+def test_scope_clarification_reply_is_state_resolved_deterministically() -> None:
+    resolver = ConversationContextResolver()
+    history = [
+        {"role": "user", "content": "What does an analyst do?"},
+        {
+            "role": "assistant",
+            "content": "Please clarify the practice.",
+            "scope_status": "borderline",
+        },
+    ]
+
+    first = resolver.resolve(
+        "I'm talking about a financial business analyst.",
+        history,
+    )
+    second = resolver.resolve(
+        "I'm talking about a financial business analyst.",
+        history,
+    )
+
+    assert first == second
+    assert first.context_used is True
+    assert "What does an analyst do?" in first.scope_query
+    assert "financial business analyst" in first.scope_query
+    assert "What does an analyst do?" in first.retrieval_query
+    assert "financial business analyst" in first.retrieval_query
+
+
+def test_unmarked_assistant_does_not_force_clarification_context() -> None:
+    resolver = ConversationContextResolver()
+    message = "I'm talking about a financial business analyst."
+
+    result = resolver.resolve(
+        message,
+        [
+            {"role": "user", "content": "What does an analyst do?"},
+            {"role": "assistant", "content": "An ordinary answer."},
+        ],
+    )
+
+    assert result.context_used is False
+    assert result.scope_query == message

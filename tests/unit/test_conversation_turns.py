@@ -69,3 +69,4 @@ async def test_persist_turn_writes_user_and_assistant_messages() -> None:
     sql = "\n".join(statement for statement, _ in cursor.executed)
     assert "insert into public.conversations" in sql
     assert sql.count("insert into public.messages") == 2
+    assert "model_name" not in sql
