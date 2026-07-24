@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from api.routes.chat import router as chat_router
 from api.routes.health import router as health_router
+from api.routes.sources import router as sources_router
 from pliris.config.settings import get_settings
 from pliris.database.postgres import close_postgres_pool
 
@@ -28,6 +29,7 @@ app = FastAPI(
 
 app.include_router(health_router)
 app.include_router(chat_router, prefix="/api/chat", tags=["chat"])
+app.include_router(sources_router, prefix="/api/sources", tags=["developer-sources"])
 
 
 @app.get("/")

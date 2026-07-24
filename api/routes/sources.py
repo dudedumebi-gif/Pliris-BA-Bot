@@ -1,141 +1,109 @@
-import logging
+from __future__ import annotations
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+import logging
+from typing import Annotated
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from api.developer_access import require_developer_access
+from api.schemas.sources import (
+    SourceChunkListResponse,
+    SourceDetail,
+    SourceListResponse,
+    SourceStats,
+    SourceStatus,
+)
+from pliris.database.repositories.documents import DocumentRepository
 
 logger = logging.getLogger(__name__)
+router = APIRouter(dependencies=[Depends(require_developer_access)])
 
-router = APIRouter()
+
+def get_document_repository() -> DocumentRepository:
+    return DocumentRepository()
 
 
-@router.get("/")
-async def get_sources():
-    """
-    Get all indexed documents/sources.
-    """
+@router.get("/", response_model=SourceListResponse)
+async def list_sources(
+    repository: Annotated[DocumentRepository, Depends(get_document_repository)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    source_status: Annotated[SourceStatus | None, Query(alias="status")] = None,
+    query: Annotated[str | None, Query(max_length=200)] = None,
+) -> SourceListResponse:
     try:
-        from pliris.database.repositories.documents import DocumentRepository
-
-        repo = DocumentRepository()
-        documents = await repo.get_all()
-
-        return documents
-
+        items, total = await repository.list_documents(
+            limit=limit,
+            offset=offset,
+            status=source_status,
+            query=query,
+        )
+        return SourceListResponse(items=items, total=total, limit=limit, offset=offset)
     except Exception as exc:
-        logger.error(f"Error fetching sources: {exc}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch sources"
-        ) from exc
-
-
-@router.get("/stats")
-async def get_source_stats():
-    """
-    Get statistics about indexed documents.
-    """
-    try:
-        from pliris.database.repositories.documents import DocumentRepository
-
-        repo = DocumentRepository()
-        stats = await repo.get_stats()
-
-        return stats
-
-    except Exception as exc:
-        logger.error(f"Error fetching source stats: {exc}", exc_info=True)
+        logger.exception("Failed to list source documents")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch source statistics",
+            detail="Failed to fetch source documents.",
         ) from exc
 
 
-@router.post("/upload")
-async def upload_source(
-    file: UploadFile = File(...),
-    title: str = Form(...),
-    source: str = Form(default=""),
-    type: str = Form(default="text"),
-    tags: str = Form(default=""),
-):
-    """
-    Upload a new document for indexing.
-    """
+@router.get("/stats", response_model=SourceStats)
+async def get_source_stats(
+    repository: Annotated[DocumentRepository, Depends(get_document_repository)],
+) -> SourceStats:
     try:
-        from ingestion.manifest import update_manifest
-        from ingestion.upload_storage import upload_to_storage
-
-        # Upload file to storage
-        file_path = await upload_to_storage(file)
-
-        # Update manifest
-        await update_manifest(
-            {
-                "title": title,
-                "source": source,
-                "type": type,
-                "tags": tags.split(",") if tags else [],
-                "file_path": file_path,
-                "status": "pending",
-            }
-        )
-
-        logger.info(f"Document uploaded: {title}")
-
-        return {
-            "status": "uploaded",
-            "title": title,
-            "file_path": file_path,
-            "message": "Document uploaded successfully and will be processed shortly",
-        }
-
+        return SourceStats.model_validate(await repository.get_stats())
     except Exception as exc:
-        logger.error(f"Error uploading source: {exc}", exc_info=True)
+        logger.exception("Failed to fetch source statistics")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to upload document"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch source statistics.",
         ) from exc
 
 
-@router.get("/{source_id}")
-async def get_source(source_id: str):
-    """
-    Get details for a specific source.
-    """
+@router.get("/{source_id}", response_model=SourceDetail)
+async def get_source(
+    source_id: UUID,
+    repository: Annotated[DocumentRepository, Depends(get_document_repository)],
+) -> SourceDetail:
     try:
-        from pliris.database.repositories.documents import DocumentRepository
+        source = await repository.get_by_id(source_id)
+    except Exception as exc:
+        logger.exception("Failed to fetch source details")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch source details.",
+        ) from exc
+    if source is None:
+        raise HTTPException(status_code=404, detail="Source not found.")
+    return SourceDetail.model_validate(source)
 
-        repo = DocumentRepository()
-        document = await repo.get_by_id(source_id)
 
-        if not document:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source not found")
-
-        return document
-
+@router.get("/{source_id}/chunks", response_model=SourceChunkListResponse)
+async def get_source_chunks(
+    source_id: UUID,
+    repository: Annotated[DocumentRepository, Depends(get_document_repository)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> SourceChunkListResponse:
+    try:
+        source = await repository.get_by_id(source_id)
+        if source is None:
+            raise HTTPException(status_code=404, detail="Source not found.")
+        items, total = await repository.list_chunks(source_id, limit=limit, offset=offset)
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error(f"Error fetching source: {exc}", exc_info=True)
+        logger.exception("Failed to fetch source chunks")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch source"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch source chunks.",
         ) from exc
-
-
-@router.delete("/{source_id}")
-async def delete_source(source_id: str):
-    """
-    Delete a source and its chunks.
-    """
-    try:
-        from pliris.database.repositories.documents import DocumentRepository
-
-        repo = DocumentRepository()
-        await repo.delete(source_id)
-
-        logger.info(f"Source deleted: {source_id}")
-
-        return {"status": "deleted", "id": source_id}
-
-    except Exception as exc:
-        logger.error(f"Error deleting source: {exc}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete source"
-        ) from exc
+    return SourceChunkListResponse(
+        document_id=source_id,
+        items=items,
+        total=total,
+        limit=limit,
+        offset=offset,
+    )

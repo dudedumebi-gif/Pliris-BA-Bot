@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     )
 
     guest_ui_shared_secret: SecretStr | None = None
+    developer_ui_access_key: SecretStr | None = None
     guest_request_window_seconds: int = Field(default=60, ge=1, le=3600)
     guest_requests_per_window: int = Field(default=5, ge=1, le=100)
     guest_max_requests_per_session: int = Field(default=40, ge=1, le=1000)
@@ -107,6 +108,18 @@ class Settings(BaseSettings):
             return None
         if not value.get_secret_value().strip():
             raise ValueError("GUEST_UI_SHARED_SECRET cannot be empty when configured.")
+        return value
+
+    @field_validator("developer_ui_access_key")
+    @classmethod
+    def validate_optional_developer_key(
+        cls,
+        value: SecretStr | None,
+    ) -> SecretStr | None:
+        if value is None:
+            return None
+        if not value.get_secret_value().strip():
+            raise ValueError("DEVELOPER_UI_ACCESS_KEY cannot be empty when configured.")
         return value
 
     @field_validator("supabase_db_url")
