@@ -29,6 +29,12 @@ DEVELOPER_HOME_PAGE = PageSpec(
     default=True,
 )
 
+DEVELOPER_SOURCES_PAGE = PageSpec(
+    path="app/developer_pages/2_Sources.py",
+    title="Sources",
+    icon="📚",
+)
+
 
 def navigation_manifest(
     mode: UIMode,
@@ -39,7 +45,10 @@ def navigation_manifest(
         return [PUBLIC_CHAT_PAGE]
 
     return {
-        "Developer": [DEVELOPER_HOME_PAGE],
+        "Developer": [
+            DEVELOPER_HOME_PAGE,
+            DEVELOPER_SOURCES_PAGE,
+        ],
         "Workspace": [
             PageSpec(
                 path=PUBLIC_CHAT_PAGE.path,

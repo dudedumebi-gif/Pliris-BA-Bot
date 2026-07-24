@@ -16,6 +16,19 @@ def test_developer_navigation_exposes_protected_shell_and_chat() -> None:
 
     assert isinstance(manifest, dict)
     assert list(manifest) == ["Developer", "Workspace"]
-    assert [page.title for page in manifest["Developer"]] == ["Developer Console"]
+    assert [page.title for page in manifest["Developer"]] == [
+        "Developer Console",
+        "Sources",
+    ]
     assert manifest["Developer"][0].path == ("app/developer_pages/0_Developer.py")
+    assert manifest["Developer"][1].path == ("app/developer_pages/2_Sources.py")
     assert [page.title for page in manifest["Workspace"]] == ["Chat"]
+
+
+def test_sources_page_relies_on_centralized_developer_boundary() -> None:
+    from pathlib import Path
+
+    source = Path("app/developer_pages/2_Sources.py").read_text(encoding="utf-8")
+
+    assert "require_developer_page" not in source
+    assert "app.developer_guard" not in source
