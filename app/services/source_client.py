@@ -51,6 +51,15 @@ class SourceChunkPage:
     offset: int
 
 
+@dataclass(frozen=True)
+class SourceEventPage:
+    document_id: str
+    items: list[dict[str, Any]]
+    total: int
+    limit: int
+    offset: int
+
+
 class SourceClient:
     """Server-to-server client for protected source inspection."""
 
@@ -140,11 +149,105 @@ class SourceClient:
             offset=returned_offset,
         )
 
+    def get_events(
+        self,
+        source_id: str,
+        *,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> SourceEventPage:
+        payload = self._get(
+            f"/api/sources/{source_id}/events",
+            params={"limit": limit, "offset": offset},
+        )
+        document_id = payload.get("document_id")
+        items = payload.get("items")
+        total = payload.get("total")
+        returned_limit = payload.get("limit")
+        returned_offset = payload.get("offset")
+
+        if (
+            not isinstance(document_id, str)
+            or not isinstance(items, list)
+            or not isinstance(total, int)
+            or not isinstance(returned_limit, int)
+            or not isinstance(returned_offset, int)
+            or any(not isinstance(item, dict) for item in items)
+        ):
+            raise _invalid_payload_error()
+        for item in items:
+            _validate_lifecycle_event(item)
+
+        return SourceEventPage(
+            document_id=document_id,
+            items=items,
+            total=total,
+            limit=returned_limit,
+            offset=returned_offset,
+        )
+
+    def archive_source(
+        self,
+        source_id: str,
+        *,
+        reason: str,
+        confirmation: str,
+    ) -> dict[str, Any]:
+        return self._apply_lifecycle_action(
+            source_id,
+            action="archive",
+            reason=reason,
+            confirmation=confirmation,
+        )
+
+    def restore_source(
+        self,
+        source_id: str,
+        *,
+        reason: str,
+        confirmation: str,
+    ) -> dict[str, Any]:
+        return self._apply_lifecycle_action(
+            source_id,
+            action="restore",
+            reason=reason,
+            confirmation=confirmation,
+        )
+
+    def _apply_lifecycle_action(
+        self,
+        source_id: str,
+        *,
+        action: str,
+        reason: str,
+        confirmation: str,
+    ) -> dict[str, Any]:
+        payload = self._request(
+            "POST",
+            f"/api/sources/{source_id}/{action}",
+            json_body={
+                "reason": reason,
+                "confirmation": confirmation,
+            },
+        )
+        _validate_lifecycle_event(payload)
+        return payload
+
     def _get(
         self,
         path: str,
         *,
         params: dict[str, str | int] | None = None,
+    ) -> dict[str, Any]:
+        return self._request("GET", path, params=params)
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, str | int] | None = None,
+        json_body: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         key = self._settings.developer_ui_access_key
         if key is None or not key.strip():
@@ -167,10 +270,12 @@ class SourceClient:
                 timeout=self._settings.api_timeout_seconds,
                 transport=self._transport,
             ) as client:
-                response = client.get(
+                response = client.request(
+                    method,
                     f"{self._settings.api_url}{path}",
                     headers=headers,
                     params=params,
+                    json=json_body,
                 )
         except httpx.TimeoutException as exc:
             raise SourceServiceError(
@@ -200,6 +305,24 @@ class SourceClient:
         return payload
 
 
+def _validate_lifecycle_event(payload: dict[str, Any]) -> None:
+    required_text = {
+        "id",
+        "document_id",
+        "actor",
+        "reason",
+        "created_at",
+    }
+    if (
+        any(not isinstance(payload.get(field), str) for field in required_text)
+        or payload.get("action") not in {"archive", "restore"}
+        or payload.get("previous_status") not in {"ready", "archived"}
+        or payload.get("new_status") not in {"ready", "archived"}
+        or not isinstance(payload.get("metadata"), dict)
+    ):
+        raise _invalid_payload_error()
+
+
 def _assert_safe_payload(value: Any) -> None:
     if isinstance(value, dict):
         if _FORBIDDEN_RESPONSE_FIELDS.intersection(value):
@@ -221,9 +344,17 @@ def _service_error_from_response(
     elif status_code == 404:
         code = "not_found"
         message = "That knowledge-base source could not be found."
+    elif status_code == 400:
+        code = "confirmation_mismatch"
+        message = "The manifest-ID confirmation did not match the selected source."
+    elif status_code == 409:
+        code = "lifecycle_conflict"
+        message = (
+            "The lifecycle action conflicts with the source's current state or index readiness."
+        )
     elif status_code == 422:
         code = "validation"
-        message = "The source filter or page request was not valid."
+        message = "The source request was not valid. Check the supplied values and try again."
     elif status_code in {502, 503, 504}:
         code = "unavailable"
         message = "The source-inspection service is temporarily unavailable."

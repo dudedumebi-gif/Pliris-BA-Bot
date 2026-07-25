@@ -4,11 +4,15 @@ import streamlit as st
 
 from app.services.source_client import SourceClient, SourceServiceError
 from app.source_view import (
+    PROTECTED_LIFECYCLE_MANIFEST_IDS,
     chunk_page_count,
     format_count,
     format_timestamp,
+    lifecycle_action_for_source,
+    lifecycle_event_label,
     page_range_label,
     source_option_label,
+    validate_lifecycle_input,
 )
 from app.ui_config import load_ui_settings
 
@@ -16,7 +20,11 @@ settings = load_ui_settings()
 client = SourceClient(settings)
 
 st.title("📚 Knowledge-Base Sources")
-st.caption("Protected read-only inspection of indexed documents and page-aware chunks.")
+st.caption("Protected inspection, reversible lifecycle controls, and append-only audit history.")
+
+lifecycle_flash = st.session_state.pop("source_lifecycle_flash", None)
+if isinstance(lifecycle_flash, str):
+    st.success(lifecycle_flash)
 
 search_col, status_col, refresh_col = st.columns([3, 2, 1])
 with search_col:
@@ -116,6 +124,97 @@ with st.expander("Integrity and ingestion metadata"):
     else:
         st.caption("No additional source metadata is available.")
 
+st.markdown("### Lifecycle and audit")
+try:
+    event_page = client.get_events(source_id, limit=20, offset=0)
+except SourceServiceError as exc:
+    event_page = None
+    st.error(exc.user_message)
+    st.caption("Lifecycle controls are unavailable until the audit history can be loaded.")
+
+manifest_id = detail.get("manifest_id")
+lifecycle_action = lifecycle_action_for_source(detail)
+
+if manifest_id in PROTECTED_LIFECYCLE_MANIFEST_IDS:
+    st.info(
+        "BABOK is a permanent protected source. Archive and restore controls are intentionally "
+        "unavailable."
+    )
+elif lifecycle_action is None:
+    st.caption("No lifecycle transition is available for this source's current status.")
+elif event_page is not None:
+    if lifecycle_action == "archive":
+        st.warning(
+            "Archiving is reversible. Indexed chunks remain retained, but retrieval excludes "
+            "the source while it is archived."
+        )
+    else:
+        st.info(
+            "Restore returns the source to ready only when every retained chunk still has an "
+            "embedding."
+        )
+
+    with st.form(key=f"source-lifecycle-{source_id}-{lifecycle_action}"):
+        reason = st.text_area(
+            "Reason",
+            max_chars=500,
+            help="Required. Enter 10-500 characters for the append-only audit record.",
+        )
+        confirmation = st.text_input(
+            "Confirm manifest ID",
+            placeholder=str(manifest_id or ""),
+            help="Enter the exact, case-sensitive manifest ID shown in Document details.",
+        )
+        submitted = st.form_submit_button(
+            f"{lifecycle_action.title()} source",
+            type="primary",
+        )
+
+    if submitted:
+        validation_error = validate_lifecycle_input(
+            reason=reason,
+            confirmation=confirmation,
+            manifest_id=manifest_id,
+        )
+        if validation_error:
+            st.error(validation_error)
+        else:
+            try:
+                if lifecycle_action == "archive":
+                    client.archive_source(
+                        source_id,
+                        reason=reason.strip(),
+                        confirmation=confirmation,
+                    )
+                    result_verb = "archived"
+                else:
+                    client.restore_source(
+                        source_id,
+                        reason=reason.strip(),
+                        confirmation=confirmation,
+                    )
+                    result_verb = "restored"
+            except SourceServiceError as exc:
+                st.error(exc.user_message)
+            else:
+                st.session_state["source_lifecycle_flash"] = (
+                    f"Source `{manifest_id}` was {result_verb}. "
+                    "Details, metrics, and audit history were refreshed."
+                )
+                st.rerun()
+
+st.markdown("#### Recent audit events")
+if event_page is None:
+    st.caption("Audit history is temporarily unavailable.")
+elif not event_page.items:
+    st.caption("No lifecycle events have been recorded for this source.")
+else:
+    st.caption(f"Showing {format_count(len(event_page.items))} of {event_page.total} events.")
+    for event in event_page.items:
+        with st.expander(lifecycle_event_label(event)):
+            st.markdown(f"**Reason:** {event.get('reason', 'Not recorded')}")
+            st.markdown(f"**Actor:** `{event.get('actor', 'Not recorded')}`")
+
 st.markdown("### Indexed chunks")
 page_size = 10
 try:
@@ -181,6 +280,6 @@ for chunk in chunk_page.items:
             st.caption("This chunk contains no displayable text.")
 
 st.info(
-    "This workspace is read-only. Upload, re-ingestion, archive, restore "
-    "and deletion controls require later validation and audit safeguards."
+    "Upload, ingestion, re-ingestion, deletion, storage removal, and paid-provider "
+    "controls are outside this workspace."
 )

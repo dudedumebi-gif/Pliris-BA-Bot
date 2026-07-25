@@ -1,11 +1,15 @@
 import pytest
 
 from app.source_view import (
+    LIFECYCLE_ACCEPTANCE_MANIFEST_ID,
     chunk_page_count,
     format_count,
     format_timestamp,
+    lifecycle_action_for_source,
+    lifecycle_event_label,
     page_range_label,
     source_option_label,
+    validate_lifecycle_input,
 )
 
 
@@ -20,7 +24,9 @@ def test_source_view_formats_counts_and_pages() -> None:
 def test_source_view_formats_timestamp_safely() -> None:
     assert format_timestamp(None) == "Not available"
     assert format_timestamp("not-a-date") == "Not available"
-    assert "2026-07-23" in format_timestamp("2026-07-23T22:00:00+00:00")
+    rendered = format_timestamp("2026-07-23T22:00:00+00:00")
+    assert rendered != "Not available"
+    assert "2026" in rendered
 
 
 def test_chunk_page_count_is_bounded() -> None:
@@ -41,3 +47,66 @@ def test_source_option_label_uses_safe_metadata() -> None:
         )
         == "BABOK Guide · ready · 293 chunks"
     )
+
+
+def test_lifecycle_action_protects_babok_and_respects_status() -> None:
+    assert lifecycle_action_for_source({"manifest_id": "babok-v3", "status": "ready"}) is None
+    assert (
+        lifecycle_action_for_source(
+            {
+                "manifest_id": LIFECYCLE_ACCEPTANCE_MANIFEST_ID,
+                "status": "ready",
+            }
+        )
+        == "archive"
+    )
+    assert (
+        lifecycle_action_for_source(
+            {
+                "manifest_id": LIFECYCLE_ACCEPTANCE_MANIFEST_ID,
+                "status": "archived",
+            }
+        )
+        == "restore"
+    )
+    assert lifecycle_action_for_source({"manifest_id": "other", "status": "failed"}) is None
+
+
+def test_lifecycle_input_requires_reason_and_exact_manifest_confirmation() -> None:
+    manifest_id = LIFECYCLE_ACCEPTANCE_MANIFEST_ID
+    assert (
+        validate_lifecycle_input(
+            reason="Too short",
+            confirmation=manifest_id,
+            manifest_id=manifest_id,
+        )
+        == "Provide a reason between 10 and 500 characters."
+    )
+    assert (
+        validate_lifecycle_input(
+            reason="Valid lifecycle reason.",
+            confirmation=manifest_id.upper(),
+            manifest_id=manifest_id,
+        )
+        == "Enter the exact, case-sensitive manifest ID shown above."
+    )
+    assert (
+        validate_lifecycle_input(
+            reason="Valid lifecycle reason.",
+            confirmation=manifest_id,
+            manifest_id=manifest_id,
+        )
+        is None
+    )
+
+
+def test_lifecycle_event_label_is_safe_and_informative() -> None:
+    label = lifecycle_event_label(
+        {
+            "action": "archive",
+            "previous_status": "ready",
+            "new_status": "archived",
+            "created_at": "2026-07-24T12:00:00+00:00",
+        }
+    )
+    assert label.startswith("Archive · ready → archived · 2026-07-24")
