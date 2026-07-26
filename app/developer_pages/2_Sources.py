@@ -5,6 +5,7 @@ import streamlit as st
 from app.services.source_client import SourceClient, SourceServiceError
 from app.source_view import (
     PROTECTED_LIFECYCLE_MANIFEST_IDS,
+    STAGING_ACCEPTANCE_MANIFEST_ID,
     chunk_page_count,
     format_count,
     format_timestamp,
@@ -12,6 +13,7 @@ from app.source_view import (
     lifecycle_event_label,
     page_range_label,
     source_option_label,
+    staging_filename_for_manifest,
     validate_lifecycle_input,
 )
 from app.ui_config import load_ui_settings
@@ -25,6 +27,65 @@ st.caption("Protected inspection, reversible lifecycle controls, and append-only
 lifecycle_flash = st.session_state.pop("source_lifecycle_flash", None)
 if isinstance(lifecycle_flash, str):
     st.success(lifecycle_flash)
+
+staging_flash = st.session_state.pop("source_staging_flash", None)
+if isinstance(staging_flash, str):
+    st.success(staging_flash)
+
+st.markdown("### Stage a validated PDF")
+st.caption(
+    "Controlled acceptance is limited to the public GAO Agile Assessment Guide. "
+    "Staging creates a pending source record and does not start ingestion."
+)
+
+staging_filename = staging_filename_for_manifest(STAGING_ACCEPTANCE_MANIFEST_ID)
+
+if staging_filename is None:
+    st.error("No manifest source is currently approved for controlled PDF staging.")
+else:
+    with st.expander("Stage GAO Agile Assessment Guide"):
+        st.markdown(f"**Manifest ID:** `{STAGING_ACCEPTANCE_MANIFEST_ID}`")
+        st.markdown(f"**Required filename:** `{staging_filename}`")
+
+        with st.form(
+            "stage-controlled-gao-pdf",
+            clear_on_submit=True,
+        ):
+            uploaded_pdf = st.file_uploader(
+                "Select the GAO PDF",
+                type=["pdf"],
+                accept_multiple_files=False,
+                max_upload_size=settings.pdf_staging_max_mib,
+                help=(
+                    "The filename must exactly match the manifest-controlled filename "
+                    f"shown above and must not exceed {settings.pdf_staging_max_mib} MiB."
+                ),
+            )
+            staging_submitted = st.form_submit_button(
+                "Stage PDF",
+                type="primary",
+            )
+
+        if staging_submitted:
+            if uploaded_pdf is None:
+                st.error("Select the GAO PDF before staging.")
+            else:
+                try:
+                    result = client.stage_pdf(
+                        manifest_id=STAGING_ACCEPTANCE_MANIFEST_ID,
+                        filename=uploaded_pdf.name,
+                        payload=uploaded_pdf.getvalue(),
+                    )
+                except SourceServiceError as exc:
+                    st.error(exc.user_message)
+                else:
+                    st.session_state["source_staging_flash"] = (
+                        f"Source `{result['manifest_id']}` was staged as "
+                        f"`{result['status']}`. No ingestion was started."
+                    )
+                    st.rerun()
+
+st.divider()
 
 search_col, status_col, refresh_col = st.columns([3, 2, 1])
 with search_col:
@@ -280,6 +341,6 @@ for chunk in chunk_page.items:
             st.caption("This chunk contains no displayable text.")
 
 st.info(
-    "Upload, ingestion, re-ingestion, deletion, storage removal, and paid-provider "
-    "controls are outside this workspace."
+    "Ingestion, re-ingestion, deletion, storage removal, and paid-provider "
+    "controls remain outside this workspace."
 )

@@ -31,6 +31,74 @@ class IngestionRepository:
             row = cursor.fetchone()
             return dict(row) if row else None
 
+    def get_document_by_checksum(
+        self,
+        checksum_sha256: str,
+    ) -> dict[str, Any] | None:
+        with postgres_connection() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                    select id, manifest_id, title, source_filename,
+                           checksum_sha256, status, storage_path
+                    from public.documents
+                    where checksum_sha256 = %s
+                """,
+                (checksum_sha256,),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def create_pending_document(
+        self,
+        *,
+        manifest: DocumentManifestEntry,
+        checksum_sha256: str,
+        size_bytes: int,
+        storage_bucket: str,
+        storage_path: str,
+    ) -> UUID:
+        metadata = {
+            **manifest.metadata,
+            "manifest_document_id": manifest.document_id,
+            "source_type": manifest.source_type,
+            "access": manifest.access,
+            "include_in_public_repository": manifest.include_in_public_repository,
+            "upload_size_bytes": size_bytes,
+        }
+
+        with postgres_connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    insert into public.documents (
+                        manifest_id, title, source_filename, storage_bucket,
+                        storage_path, author, edition, publication_year,
+                        mime_type, checksum_sha256, status, ingestion_error,
+                        metadata
+                    )
+                    values (
+                        %s, %s, %s, %s, %s, %s, %s, %s,
+                        'application/pdf', %s, 'pending', null, %s
+                    )
+                    returning id
+                    """,
+                    (
+                        manifest.document_id,
+                        manifest.title,
+                        manifest.source_filename,
+                        storage_bucket,
+                        storage_path,
+                        manifest.author,
+                        manifest.edition,
+                        manifest.publication_year,
+                        checksum_sha256,
+                        Jsonb(metadata),
+                    ),
+                )
+                document_id = cursor.fetchone()["id"]
+            connection.commit()
+        return document_id
+
     def start_run(self, configuration: dict[str, Any]) -> UUID:
         with postgres_connection() as connection:
             with connection.cursor() as cursor:
@@ -153,6 +221,86 @@ class IngestionRepository:
                 document_id = cursor.fetchone()["id"]
             connection.commit()
         return document_id
+
+    def claim_pending_document(
+        self,
+        *,
+        database_document_id: UUID,
+        manifest: DocumentManifestEntry,
+        checksum_sha256: str,
+        page_count: int,
+        storage_bucket: str,
+        storage_path: str,
+        pdf_metadata: dict[str, Any],
+    ) -> UUID:
+        """Atomically claim one exact staged document for ingestion."""
+
+        metadata = {
+            **manifest.metadata,
+            "manifest_document_id": manifest.document_id,
+            "source_type": manifest.source_type,
+            "access": manifest.access,
+            "include_in_public_repository": manifest.include_in_public_repository,
+            "pdf_metadata": pdf_metadata,
+        }
+
+        with postgres_connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    update public.documents
+                    set title = %s,
+                        source_filename = %s,
+                        author = %s,
+                        edition = %s,
+                        publication_year = %s,
+                        page_count = %s,
+                        status = 'processing',
+                        ingestion_error = null,
+                        metadata = metadata || %s,
+                        updated_at = now()
+                    where id = %s
+                      and manifest_id = %s
+                      and checksum_sha256 = %s
+                      and storage_bucket = %s
+                      and storage_path = %s
+                      and status = 'pending'
+                      and not exists (
+                          select 1
+                          from public.document_chunks
+                          where document_id = public.documents.id
+                      )
+                    returning id
+                    """,
+                    (
+                        manifest.title,
+                        manifest.source_filename,
+                        manifest.author,
+                        manifest.edition,
+                        manifest.publication_year,
+                        page_count,
+                        Jsonb(metadata),
+                        database_document_id,
+                        manifest.document_id,
+                        checksum_sha256,
+                        storage_bucket,
+                        storage_path,
+                    ),
+                )
+                row = cursor.fetchone()
+
+                if row is None:
+                    connection.rollback()
+                    raise ValueError(
+                        "The staged document could not be claimed because its "
+                        "identity, storage, state, or chunk guards did not match."
+                    )
+
+                claimed_document_id = row["id"]
+
+            connection.commit()
+
+        return claimed_document_id
 
     def replace_chunks(
         self,

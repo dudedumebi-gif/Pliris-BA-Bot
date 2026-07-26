@@ -81,3 +81,14 @@ class SourceChunkListResponse(BaseModel):
     total: int = Field(ge=0)
     limit: int = Field(ge=1)
     offset: int = Field(ge=0)
+
+
+class SourceStagingResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    database_document_id: UUID
+    manifest_id: str
+    safe_filename: str
+    checksum_sha256: str = Field(min_length=64, max_length=64)
+    size_bytes: int = Field(ge=1)
+    status: Literal["pending"]

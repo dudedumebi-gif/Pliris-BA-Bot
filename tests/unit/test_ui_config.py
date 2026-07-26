@@ -15,6 +15,8 @@ def test_ui_settings_default_to_public_local_mode() -> None:
     assert settings.ui_mode is UIMode.PUBLIC
     assert settings.guest_ui_shared_secret is None
     assert settings.developer_ui_access_key is None
+    assert settings.pdf_staging_max_bytes == 33_554_432
+    assert settings.pdf_staging_max_mib == 32
 
 
 def test_ui_settings_normalize_hosted_configuration() -> None:
@@ -34,6 +36,8 @@ def test_ui_settings_normalize_hosted_configuration() -> None:
     assert settings.ui_mode is UIMode.DEVELOPER
     assert settings.guest_ui_shared_secret == "ui-secret"
     assert settings.developer_ui_access_key == "developer-secret"
+    assert settings.pdf_staging_max_bytes == 33_554_432
+    assert settings.pdf_staging_max_mib == 32
 
 
 def test_ui_settings_load_local_dotenv_with_process_override(
@@ -61,6 +65,8 @@ def test_ui_settings_load_local_dotenv_with_process_override(
     assert settings.api_url == "https://process-override.example.test"
     assert settings.ui_mode is UIMode.DEVELOPER
     assert settings.developer_ui_access_key == "local-developer-key"
+    assert settings.pdf_staging_max_bytes == 33_554_432
+    assert settings.pdf_staging_max_mib == 32
 
 
 @pytest.mark.parametrize(
@@ -94,3 +100,26 @@ def test_ui_settings_reject_invalid_configuration(
 ) -> None:
     with pytest.raises(UIConfigurationError, match=message):
         load_ui_settings(environ)
+
+
+def test_ui_settings_accept_custom_pdf_staging_limit() -> None:
+    settings = load_ui_settings({"PDF_STAGING_MAX_BYTES": str(48 * 1024 * 1024)})
+
+    assert settings.pdf_staging_max_bytes == 50_331_648
+    assert settings.pdf_staging_max_mib == 48
+
+
+@pytest.mark.parametrize(
+    "raw_value",
+    [
+        "not-an-integer",
+        "0",
+        str(101 * 1024 * 1024),
+        str((32 * 1024 * 1024) + 1),
+    ],
+)
+def test_ui_settings_reject_invalid_pdf_staging_limit(
+    raw_value: str,
+) -> None:
+    with pytest.raises(UIConfigurationError):
+        load_ui_settings({"PDF_STAGING_MAX_BYTES": raw_value})

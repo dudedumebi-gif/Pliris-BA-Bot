@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from string import hexdigits
 from typing import Any
+from uuid import UUID
 
 import httpx
 
@@ -9,6 +11,7 @@ from app.ui_config import UISettings
 
 DEVELOPER_KEY_HEADER = "X-Pliris-Developer-Key"
 _FORBIDDEN_RESPONSE_FIELDS = {
+    "storage_bucket",
     "storage_path",
     "ingestion_error",
     "openai_api_key",
@@ -113,6 +116,53 @@ class SourceClient:
 
     def get_source(self, source_id: str) -> dict[str, Any]:
         return self._get(f"/api/sources/{source_id}")
+
+    def stage_pdf(
+        self,
+        *,
+        manifest_id: str,
+        filename: str,
+        payload: bytes,
+    ) -> dict[str, Any]:
+        response = self._request(
+            "POST",
+            "/api/sources/stage",
+            form_data={"manifest_id": manifest_id},
+            files={
+                "upload": (
+                    filename,
+                    payload,
+                    "application/pdf",
+                )
+            },
+            expected_status=201,
+            staging_request=True,
+        )
+
+        database_document_id = response.get("database_document_id")
+        returned_manifest_id = response.get("manifest_id")
+        safe_filename = response.get("safe_filename")
+        checksum = response.get("checksum_sha256")
+        size_bytes = response.get("size_bytes")
+
+        if (
+            not isinstance(database_document_id, str)
+            or returned_manifest_id != manifest_id
+            or safe_filename != filename
+            or not isinstance(checksum, str)
+            or len(checksum) != 64
+            or any(character not in hexdigits for character in checksum)
+            or size_bytes != len(payload)
+            or response.get("status") != "pending"
+        ):
+            raise _invalid_payload_error()
+
+        try:
+            UUID(database_document_id)
+        except (TypeError, ValueError) as exc:
+            raise _invalid_payload_error() from exc
+
+        return response
 
     def get_chunks(
         self,
@@ -248,6 +298,10 @@ class SourceClient:
         *,
         params: dict[str, str | int] | None = None,
         json_body: dict[str, str] | None = None,
+        form_data: dict[str, str] | None = None,
+        files: dict[str, tuple[str, bytes, str]] | None = None,
+        expected_status: int = 200,
+        staging_request: bool = False,
     ) -> dict[str, Any]:
         key = self._settings.developer_ui_access_key
         if key is None or not key.strip():
@@ -276,6 +330,8 @@ class SourceClient:
                     headers=headers,
                     params=params,
                     json=json_body,
+                    data=form_data,
+                    files=files,
                 )
         except httpx.TimeoutException as exc:
             raise SourceServiceError(
@@ -290,7 +346,9 @@ class SourceClient:
                 user_message=("The source-inspection service is temporarily unavailable."),
             ) from exc
 
-        if response.status_code != 200:
+        if response.status_code != expected_status:
+            if staging_request:
+                raise _staging_service_error_from_response(response)
             raise _service_error_from_response(response)
 
         try:
@@ -332,6 +390,44 @@ def _assert_safe_payload(value: Any) -> None:
     elif isinstance(value, list):
         for item in value:
             _assert_safe_payload(item)
+
+
+def _staging_service_error_from_response(
+    response: httpx.Response,
+) -> SourceServiceError:
+    status_code = response.status_code
+
+    if status_code == 403:
+        return SourceServiceError(
+            code="staging_protected",
+            user_message="This manifest source is protected from PDF staging.",
+            status_code=status_code,
+        )
+    if status_code == 404:
+        return SourceServiceError(
+            code="manifest_not_found",
+            user_message="The selected manifest source could not be found.",
+            status_code=status_code,
+        )
+    if status_code == 409:
+        return SourceServiceError(
+            code="staging_conflict",
+            user_message=(
+                "This PDF or manifest source is already registered. No new source was staged."
+            ),
+            status_code=status_code,
+        )
+    if status_code == 422:
+        return SourceServiceError(
+            code="validation",
+            user_message=(
+                "The PDF could not be staged. Confirm the filename, file type, "
+                "content, and permitted size."
+            ),
+            status_code=status_code,
+        )
+
+    return _service_error_from_response(response)
 
 
 def _service_error_from_response(

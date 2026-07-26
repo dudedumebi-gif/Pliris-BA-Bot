@@ -49,12 +49,16 @@ class IngestionPipeline:
         dry_run: bool = False,
         max_pages: int | None = None,
         force: bool = False,
+        staged_document_id: UUID | None = None,
         embedding_batch_size: int = 64,
     ) -> IngestionSummary:
         if max_pages is not None and not dry_run:
             raise ValueError(
                 "max_pages is allowed only with dry_run to prevent partial production ingestion."
             )
+
+        if staged_document_id is not None and force:
+            raise ValueError("--force may not be used with a staged document.")
 
         manifest = get_manifest_document(document_id, self.manifest_path)
         source_path = resolve_source_path(manifest, self.private_directory)
@@ -89,7 +93,8 @@ class IngestionPipeline:
 
         existing = self.repository.get_document(document_id)
         if (
-            existing
+            staged_document_id is None
+            and existing
             and existing["checksum_sha256"] == checksum
             and existing["status"] == "ready"
             and not force
@@ -118,6 +123,9 @@ class IngestionPipeline:
                 "chunk_size_tokens": self.settings.chunk_size_tokens,
                 "chunk_overlap_tokens": self.settings.chunk_overlap_tokens,
                 "force": force,
+                "staged_document_id": (
+                    str(staged_document_id) if staged_document_id is not None else None
+                ),
             }
         )
 
@@ -125,19 +133,35 @@ class IngestionPipeline:
         storage_path: str | None = None
 
         try:
-            storage_path = self.storage.upload_pdf(
-                source_path,
-                document_id=document_id,
-            )
+            if staged_document_id is None:
+                storage_path = self.storage.upload_pdf(
+                    source_path,
+                    document_id=document_id,
+                )
 
-            database_document_id = self.repository.upsert_processing_document(
-                manifest=manifest,
-                checksum_sha256=checksum,
-                page_count=extracted.page_count,
-                storage_bucket=self.settings.supabase_storage_bucket,
-                storage_path=storage_path,
-                pdf_metadata=extracted.pdf_metadata,
-            )
+                database_document_id = self.repository.upsert_processing_document(
+                    manifest=manifest,
+                    checksum_sha256=checksum,
+                    page_count=extracted.page_count,
+                    storage_bucket=self.settings.supabase_storage_bucket,
+                    storage_path=storage_path,
+                    pdf_metadata=extracted.pdf_metadata,
+                )
+            else:
+                storage_path = self.storage.build_storage_path(
+                    document_id,
+                    manifest.source_filename,
+                )
+
+                database_document_id = self.repository.claim_pending_document(
+                    database_document_id=staged_document_id,
+                    manifest=manifest,
+                    checksum_sha256=checksum,
+                    page_count=extracted.page_count,
+                    storage_bucket=self.settings.supabase_storage_bucket,
+                    storage_path=storage_path,
+                    pdf_metadata=extracted.pdf_metadata,
+                )
 
             embedding_result = self.embedding_service.embed_texts(
                 [chunk.content for chunk in chunks],

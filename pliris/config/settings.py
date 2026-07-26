@@ -63,6 +63,12 @@ class Settings(BaseSettings):
 
     private_document_directory: Path = Path("data/private")
     corpus_manifest_path: Path = Path("data/corpus_manifest.yaml")
+    pdf_staging_max_bytes: int = Field(
+        default=32 * 1024 * 1024,
+        ge=1024 * 1024,
+        le=100 * 1024 * 1024,
+        multiple_of=1024 * 1024,
+    )
     chunk_size_tokens: int = Field(default=700, ge=100, le=4000)
     chunk_overlap_tokens: int = Field(default=100, ge=0, le=1000)
 

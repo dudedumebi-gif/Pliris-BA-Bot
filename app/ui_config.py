@@ -10,6 +10,9 @@ from urllib.parse import urlparse
 from dotenv import dotenv_values
 
 ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
+MEBIBYTE = 1024 * 1024
+DEFAULT_PDF_STAGING_MAX_BYTES = 32 * MEBIBYTE
+MAX_PDF_STAGING_MAX_BYTES = 100 * MEBIBYTE
 
 
 class UIConfigurationError(ValueError):
@@ -33,6 +36,11 @@ class UISettings:
     ui_mode: UIMode
     guest_ui_shared_secret: str | None
     developer_ui_access_key: str | None
+    pdf_staging_max_bytes: int = DEFAULT_PDF_STAGING_MAX_BYTES
+
+    @property
+    def pdf_staging_max_mib(self) -> int:
+        return self.pdf_staging_max_bytes // MEBIBYTE
 
 
 def load_ui_settings(
@@ -74,6 +82,8 @@ def load_ui_settings(
     if ui_mode is UIMode.DEVELOPER and developer_key is None:
         raise UIConfigurationError("DEVELOPER_UI_ACCESS_KEY is required in developer mode.")
 
+    pdf_staging_max_bytes = _load_pdf_staging_max_bytes(values)
+
     return UISettings(
         app_env=app_env,
         api_url=api_url,
@@ -81,6 +91,7 @@ def load_ui_settings(
         ui_mode=ui_mode,
         guest_ui_shared_secret=guest_secret,
         developer_ui_access_key=developer_key,
+        pdf_staging_max_bytes=pdf_staging_max_bytes,
     )
 
 
@@ -100,3 +111,23 @@ def _optional_secret(value: str | None) -> str | None:
 
     cleaned = value.strip()
     return cleaned or None
+
+
+def _load_pdf_staging_max_bytes(values: Mapping[str, str]) -> int:
+    raw_value = values.get(
+        "PDF_STAGING_MAX_BYTES",
+        str(DEFAULT_PDF_STAGING_MAX_BYTES),
+    ).strip()
+
+    try:
+        value = int(raw_value)
+    except ValueError as exc:
+        raise UIConfigurationError("PDF_STAGING_MAX_BYTES must be an integer.") from exc
+
+    if not MEBIBYTE <= value <= MAX_PDF_STAGING_MAX_BYTES:
+        raise UIConfigurationError("PDF_STAGING_MAX_BYTES must be between 1 MiB and 100 MiB.")
+
+    if value % MEBIBYTE != 0:
+        raise UIConfigurationError("PDF_STAGING_MAX_BYTES must be a whole number of MiB.")
+
+    return value

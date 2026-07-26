@@ -32,3 +32,15 @@ def test_sources_page_relies_on_centralized_developer_boundary() -> None:
 
     assert "require_developer_page" not in source
     assert "app.developer_guard" not in source
+
+
+def test_sources_page_limits_staging_to_controlled_manifest() -> None:
+    from pathlib import Path
+
+    source = Path("app/developer_pages/2_Sources.py").read_text(encoding="utf-8")
+
+    assert "STAGING_ACCEPTANCE_MANIFEST_ID" in source
+    assert "staging_filename_for_manifest" in source
+    assert "client.stage_pdf" in source
+    assert "No ingestion was started." in source
+    assert 'st.selectbox("Manifest source"' not in source

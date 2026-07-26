@@ -2,6 +2,7 @@ import pytest
 
 from app.source_view import (
     LIFECYCLE_ACCEPTANCE_MANIFEST_ID,
+    STAGING_ACCEPTANCE_MANIFEST_ID,
     chunk_page_count,
     format_count,
     format_timestamp,
@@ -9,6 +10,7 @@ from app.source_view import (
     lifecycle_event_label,
     page_range_label,
     source_option_label,
+    staging_filename_for_manifest,
     validate_lifecycle_input,
 )
 
@@ -110,3 +112,12 @@ def test_lifecycle_event_label_is_safe_and_informative() -> None:
         }
     )
     assert label.startswith("Archive · ready → archived · 2026-07-24")
+
+
+def test_staging_target_allows_only_controlled_gao_source() -> None:
+    assert (
+        staging_filename_for_manifest(STAGING_ACCEPTANCE_MANIFEST_ID)
+        == "GAO_Agile_Assessment_Guide_2023.pdf"
+    )
+    assert staging_filename_for_manifest("babok-v3") is None
+    assert staging_filename_for_manifest("unapproved-source") is None

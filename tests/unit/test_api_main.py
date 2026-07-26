@@ -22,3 +22,5 @@ def test_production_app_registers_protected_source_routes() -> None:
     assert "/api/sources/stats" in paths
     assert "/api/sources/{source_id}" in paths
     assert "/api/sources/{source_id}/chunks" in paths
+    assert "/api/sources/stage" in paths
+    assert "post" in paths["/api/sources/stage"]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -279,5 +280,109 @@ def test_source_client_rejects_forbidden_response_fields() -> None:
             _settings(),
             transport=httpx.MockTransport(handler),
         ).get_source("source-1")
+
+    assert caught.value.code == "invalid_response"
+
+
+def _staging_response() -> dict[str, object]:
+    return {
+        "database_document_id": str(uuid4()),
+        "manifest_id": "gao-agile-assessment-guide-2023",
+        "safe_filename": "GAO_Agile_Assessment_Guide_2023.pdf",
+        "checksum_sha256": "a" * 64,
+        "size_bytes": len(b"%PDF-1.7\ncontrolled-acceptance-content"),
+        "status": "pending",
+    }
+
+
+def test_source_client_stages_multipart_pdf() -> None:
+    observed: dict[str, object] = {}
+    payload = b"%PDF-1.7\ncontrolled-acceptance-content"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        observed["method"] = request.method
+        observed["url"] = str(request.url)
+        observed["key"] = request.headers.get(DEVELOPER_KEY_HEADER)
+        observed["content_type"] = request.headers.get("content-type")
+        observed["body"] = request.content
+        return _json_response(
+            request,
+            _staging_response(),
+            status_code=201,
+        )
+
+    result = SourceClient(
+        _settings(),
+        transport=httpx.MockTransport(handler),
+    ).stage_pdf(
+        manifest_id="gao-agile-assessment-guide-2023",
+        filename="GAO_Agile_Assessment_Guide_2023.pdf",
+        payload=payload,
+    )
+
+    assert result["status"] == "pending"
+    assert observed["method"] == "POST"
+    assert observed["url"] == "https://api.example.test/api/sources/stage"
+    assert observed["key"] == "developer-secret"
+    assert str(observed["content_type"]).startswith("multipart/form-data;")
+
+    body = observed["body"]
+    assert isinstance(body, bytes)
+    assert b'name="manifest_id"' in body
+    assert b"gao-agile-assessment-guide-2023" in body
+    assert b"GAO_Agile_Assessment_Guide_2023.pdf" in body
+    assert payload in body
+
+
+@pytest.mark.parametrize(
+    ("status_code", "expected_code"),
+    [
+        (403, "staging_protected"),
+        (404, "manifest_not_found"),
+        (409, "staging_conflict"),
+        (422, "validation"),
+        (500, "server_error"),
+    ],
+)
+def test_source_client_translates_staging_failures_safely(
+    status_code: int,
+    expected_code: str,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return _json_response(
+            request,
+            {"detail": "sensitive storage and database details"},
+            status_code=status_code,
+        )
+
+    with pytest.raises(SourceServiceError) as caught:
+        SourceClient(
+            _settings(),
+            transport=httpx.MockTransport(handler),
+        ).stage_pdf(
+            manifest_id="gao-agile-assessment-guide-2023",
+            filename="GAO_Agile_Assessment_Guide_2023.pdf",
+            payload=b"%PDF-1.7\ncontrolled-acceptance-content",
+        )
+
+    assert caught.value.code == expected_code
+    assert "sensitive storage" not in caught.value.user_message
+
+
+def test_source_client_rejects_unsafe_staging_response() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        response = _staging_response()
+        response["storage_bucket"] = "knowledge-base"
+        return _json_response(request, response, status_code=201)
+
+    with pytest.raises(SourceServiceError) as caught:
+        SourceClient(
+            _settings(),
+            transport=httpx.MockTransport(handler),
+        ).stage_pdf(
+            manifest_id="gao-agile-assessment-guide-2023",
+            filename="GAO_Agile_Assessment_Guide_2023.pdf",
+            payload=b"%PDF-1.7\ncontrolled-acceptance-content",
+        )
 
     assert caught.value.code == "invalid_response"

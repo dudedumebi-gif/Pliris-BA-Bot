@@ -5,7 +5,12 @@ from math import ceil
 from typing import Any, Literal
 
 PROTECTED_LIFECYCLE_MANIFEST_IDS = frozenset({"babok-v3"})
-LIFECYCLE_ACCEPTANCE_MANIFEST_ID = "gao-agile-assessment-guide-2023"
+PROTECTED_STAGING_MANIFEST_IDS = frozenset({"babok-v3"})
+
+CONTROLLED_ACCEPTANCE_MANIFEST_ID = "gao-agile-assessment-guide-2023"
+LIFECYCLE_ACCEPTANCE_MANIFEST_ID = CONTROLLED_ACCEPTANCE_MANIFEST_ID
+STAGING_ACCEPTANCE_MANIFEST_ID = CONTROLLED_ACCEPTANCE_MANIFEST_ID
+STAGING_ACCEPTANCE_FILENAME = "GAO_Agile_Assessment_Guide_2023.pdf"
 LifecycleAction = Literal["archive", "restore"]
 
 
@@ -93,3 +98,11 @@ def lifecycle_event_label(event: dict[str, Any]) -> str:
         f"{safe_action} · {safe_previous} → {safe_new} · "
         f"{format_timestamp(event.get('created_at'))}"
     )
+
+
+def staging_filename_for_manifest(manifest_id: str) -> str | None:
+    if manifest_id in PROTECTED_STAGING_MANIFEST_IDS:
+        return None
+    if manifest_id != STAGING_ACCEPTANCE_MANIFEST_ID:
+        return None
+    return STAGING_ACCEPTANCE_FILENAME
