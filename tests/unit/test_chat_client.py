@@ -22,6 +22,7 @@ def settings() -> UISettings:
 
 def test_chat_client_sends_server_side_guest_headers() -> None:
     session_id = str(uuid4())
+    assistant_message_id = str(uuid4())
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url == "https://api.example.test/api/chat/"
@@ -36,6 +37,7 @@ def test_chat_client_sends_server_side_guest_headers() -> None:
                 "confidence": 0.9,
                 "scope": "business_analysis",
                 "conversation_id": "conv-1",
+                "assistant_message_id": assistant_message_id,
                 "metadata": {"insufficient_evidence": False},
             },
         )
@@ -51,6 +53,7 @@ def test_chat_client_sends_server_side_guest_headers() -> None:
 
     assert reply.response.endswith("[S1].")
     assert reply.conversation_id == "conv-1"
+    assert reply.assistant_message_id == assistant_message_id
     assert reply.confidence == 0.9
     assert reply.citations[0]["citation_id"] == "S1"
 

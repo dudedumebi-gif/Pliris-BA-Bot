@@ -3,7 +3,26 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 from contextlib import AbstractContextManager
+from dataclasses import dataclass
 from typing import Any
+
+
+@dataclass(frozen=True, slots=True)
+class ConversationTurnOutcome:
+    """Identifiers created for one persisted non-grounded chat response."""
+
+    client_session_id: str
+    database_conversation_id: str
+    user_message_id: str
+    assistant_message_id: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "client_session_id": self.client_session_id,
+            "database_conversation_id": self.database_conversation_id,
+            "user_message_id": self.user_message_id,
+            "assistant_message_id": self.assistant_message_id,
+        }
 
 
 class ConversationTurnRepository:
@@ -28,7 +47,7 @@ class ConversationTurnRepository:
         assistant_message: str,
         scope_status: str,
         scope_confidence: float,
-    ) -> None:
+    ) -> ConversationTurnOutcome:
         """Persist one bounded conversational turn without retrieval data."""
 
         session_id = client_session_id.strip()
@@ -39,7 +58,7 @@ class ConversationTurnRepository:
         if not assistant_message.strip():
             raise ValueError("assistant_message must not be blank")
 
-        await asyncio.to_thread(
+        return await asyncio.to_thread(
             self._persist_turn_sync,
             session_id,
             user_message.strip(),
@@ -55,7 +74,7 @@ class ConversationTurnRepository:
         assistant_message: str,
         scope_status: str,
         scope_confidence: float,
-    ) -> None:
+    ) -> ConversationTurnOutcome:
         with self.connection_factory() as connection:
             try:
                 with connection.cursor() as cursor:
@@ -100,6 +119,7 @@ class ConversationTurnRepository:
                             citations
                         )
                         values (%s, 'user', %s, %s, %s, '[]'::jsonb)
+                        returning id
                         """,
                         (
                             conversation_id,
@@ -108,6 +128,7 @@ class ConversationTurnRepository:
                             scope_confidence,
                         ),
                     )
+                    user_message_id = cursor.fetchone()["id"]
                     cursor.execute(
                         """
                         insert into public.messages (
@@ -126,6 +147,7 @@ class ConversationTurnRepository:
                             %s,
                             '[]'::jsonb
                         )
+                        returning id
                         """,
                         (
                             conversation_id,
@@ -134,6 +156,7 @@ class ConversationTurnRepository:
                             scope_confidence,
                         ),
                     )
+                    assistant_message_id = cursor.fetchone()["id"]
                     cursor.execute(
                         """
                         update public.conversations
@@ -146,3 +169,10 @@ class ConversationTurnRepository:
             except Exception:
                 connection.rollback()
                 raise
+
+        return ConversationTurnOutcome(
+            client_session_id=client_session_id,
+            database_conversation_id=str(conversation_id),
+            user_message_id=str(user_message_id),
+            assistant_message_id=str(assistant_message_id),
+        )

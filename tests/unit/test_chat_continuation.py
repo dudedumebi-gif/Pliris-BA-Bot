@@ -91,7 +91,12 @@ class FakeResult:
                 "output_tokens": 1,
                 "total_tokens": 2,
             },
-            "metadata": {"persistence": {"status": "completed"}},
+            "metadata": {
+                "persistence": {
+                    "status": "completed",
+                    "assistant_message_id": "00000000-0000-0000-0000-000000000021",
+                }
+            },
         }
 
 
@@ -145,6 +150,7 @@ async def test_chat_resolves_owned_context_dependent_follow_up() -> None:
     )
 
     assert response.conversation_id == token
+    assert str(response.assistant_message_id) == "00000000-0000-0000-0000-000000000021"
     assert response.metadata["conversation_context"] == {
         "context_used": True,
         "history_message_count": 2,
@@ -215,6 +221,7 @@ async def test_chat_issues_bound_token_for_new_grounded_session() -> None:
     )
 
     assert response.conversation_id is not None
+    assert str(response.assistant_message_id) == "00000000-0000-0000-0000-000000000021"
     assert tokens.validate(response.conversation_id, session_id) == (response.conversation_id)
 
 
@@ -255,6 +262,7 @@ async def test_chat_resolves_scope_clarification_reply_as_one_request() -> None:
         context_resolver=ConversationContextResolver(),
     )
 
+    assert str(response.assistant_message_id) == "00000000-0000-0000-0000-000000000021"
     assert response.metadata["conversation_context"]["context_used"] is True
     assert "What does an analyst do?" in scope.messages[0]
     assert "financial business analyst" in scope.messages[0]

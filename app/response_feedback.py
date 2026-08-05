@@ -21,17 +21,10 @@ def response_feedback_target(message: dict[str, Any]) -> ResponseFeedbackTarget 
         return None
 
     conversation_id = message.get("conversation_id")
-    metadata = message.get("metadata")
+    assistant_message_id = message.get("assistant_message_id")
     if not isinstance(conversation_id, str) or not conversation_id.strip():
         return None
-    if not isinstance(metadata, dict):
-        return None
 
-    persistence = metadata.get("persistence")
-    if not isinstance(persistence, dict) or persistence.get("status") != "completed":
-        return None
-
-    assistant_message_id = persistence.get("assistant_message_id")
     try:
         normalized_message_id = str(UUID(str(assistant_message_id)))
     except (TypeError, ValueError, AttributeError):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI, HTTPException
@@ -23,6 +24,7 @@ from pliris.agents.request_classifier import (
     RequestClassification,
     RequestMode,
 )
+from pliris.database.repositories.conversation_turns import ConversationTurnOutcome
 
 
 class FakeInjectionDetector:
@@ -50,6 +52,30 @@ class FakeEventLogger:
     async def log_chat_failure(self, **values: Any) -> str:
         self.calls.append(("chat_failure", values))
         return "event-3"
+
+
+class FakeConversationTokenManager:
+    def issue(self, session_id: str) -> str:
+        assert session_id
+        return "v1.00000000000000000000000000000001.test-signature"
+
+    def validate(self, token: str, session_id: str) -> str:
+        assert session_id
+        return token
+
+
+class FakeConversationTurnRepository:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, Any]] = []
+
+    async def persist_turn(self, **values: Any) -> ConversationTurnOutcome:
+        self.calls.append(values)
+        return ConversationTurnOutcome(
+            client_session_id=values["client_session_id"],
+            database_conversation_id="00000000-0000-0000-0000-000000000010",
+            user_message_id="00000000-0000-0000-0000-000000000011",
+            assistant_message_id="00000000-0000-0000-0000-000000000012",
+        )
 
 
 class FakeScopeClassifier:
@@ -134,7 +160,12 @@ class FakePipelineResult:
                 },
                 "metadata": {
                     "retrieved_count": 0,
-                    "persistence": {"status": "completed"},
+                    "persistence": {
+                        "status": "completed",
+                        "assistant_message_id": (
+                            "00000000-0000-0000-0000-000000000013"
+                        ),
+                    },
                 },
             }
 
@@ -173,6 +204,9 @@ class FakePipelineResult:
                 "persistence": {
                     "status": "completed",
                     "database_conversation_id": "db-conv",
+                    "assistant_message_id": (
+                        "00000000-0000-0000-0000-000000000014"
+                    ),
                 },
             },
         }
@@ -249,15 +283,23 @@ async def test_chat_preserves_exact_out_of_scope_response() -> None:
     )
     request_classifier = FakeRequestClassifier()
     event_logger = FakeEventLogger()
+    turn_repository = FakeConversationTurnRepository()
+    session_id = str(uuid4())
 
     response = await chat(
         request=ChatRequest(message="Tell me a sports score."),
-        user={"id": "system", "name": "System User"},
+        user={
+            "id": "system",
+            "name": "System User",
+            "session_id": session_id,
+        },
         orchestrator=orchestrator,
         scope_classifier=scope,
         request_classifier=request_classifier,
         prompt_injection_detector=FakeInjectionDetector(),
         event_logger=event_logger,
+        conversation_tokens=FakeConversationTokenManager(),
+        conversation_turns=turn_repository,
     )
 
     assert response.response == OUT_OF_SCOPE_RESPONSE
@@ -270,7 +312,12 @@ async def test_chat_preserves_exact_out_of_scope_response() -> None:
     assert response.citations == []
     assert response.confidence == 0.0
     assert response.scope == "out_of_scope"
+    assert str(response.assistant_message_id) == (
+        "00000000-0000-0000-0000-000000000012"
+    )
     assert response.metadata["guardrail"] == "out_of_scope"
+    assert response.metadata["persistence"]["status"] == "completed"
+    assert turn_repository.calls[0]["scope_status"] == "out_of_scope"
     assert orchestrator.calls == []
     assert request_classifier.messages == []
     assert event_logger.calls == [

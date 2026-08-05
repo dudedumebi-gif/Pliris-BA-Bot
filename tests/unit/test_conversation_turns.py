@@ -13,7 +13,12 @@ from pliris.database.repositories.conversation_turns import (
 class FakeCursor:
     def __init__(self) -> None:
         self.executed: list[tuple[str, tuple[Any, ...]]] = []
-        self.fetches = [None, {"id": "conversation-1"}]
+        self.fetches = [
+            None,
+            {"id": "conversation-1"},
+            {"id": "user-message-1"},
+            {"id": "assistant-message-1"},
+        ]
 
     def __enter__(self) -> FakeCursor:
         return self
@@ -57,7 +62,7 @@ async def test_persist_turn_writes_user_and_assistant_messages() -> None:
         connection_factory=factory,
     )
 
-    await repository.persist_turn(
+    outcome = await repository.persist_turn(
         client_session_id="session-1",
         user_message="What does an analyst do?",
         assistant_message="Please clarify the practice.",
@@ -70,3 +75,8 @@ async def test_persist_turn_writes_user_and_assistant_messages() -> None:
     assert "insert into public.conversations" in sql
     assert sql.count("insert into public.messages") == 2
     assert "model_name" not in sql
+    assert outcome.client_session_id == "session-1"
+    assert outcome.database_conversation_id == "conversation-1"
+    assert outcome.user_message_id == "user-message-1"
+    assert outcome.assistant_message_id == "assistant-message-1"
+    assert sql.count("returning id") == 3

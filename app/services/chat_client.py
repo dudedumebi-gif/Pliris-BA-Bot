@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+from uuid import UUID
 
 import httpx
 
@@ -37,7 +38,8 @@ class ChatReply:
     citations: list[dict[str, Any]]
     confidence: float
     scope: str
-    conversation_id: str | None
+    conversation_id: str
+    assistant_message_id: str
     metadata: dict[str, Any]
 
 
@@ -120,6 +122,7 @@ def _parse_reply(payload: Any) -> ChatReply:
     confidence = payload.get("confidence")
     scope = payload.get("scope")
     conversation_id = payload.get("conversation_id")
+    assistant_message_id = payload.get("assistant_message_id")
     metadata = payload.get("metadata", {})
 
     if not isinstance(response, str) or not response.strip():
@@ -128,8 +131,12 @@ def _parse_reply(payload: Any) -> ChatReply:
         raise _invalid_payload_error()
     if not isinstance(scope, str):
         raise _invalid_payload_error()
-    if conversation_id is not None and not isinstance(conversation_id, str):
+    if not isinstance(conversation_id, str) or not conversation_id.strip():
         raise _invalid_payload_error()
+    try:
+        normalized_message_id = str(UUID(str(assistant_message_id)))
+    except (TypeError, ValueError, AttributeError) as exc:
+        raise _invalid_payload_error() from exc
     if not isinstance(metadata, dict):
         raise _invalid_payload_error()
 
@@ -148,7 +155,8 @@ def _parse_reply(payload: Any) -> ChatReply:
         citations=normalized_citations,
         confidence=normalized_confidence,
         scope=scope,
-        conversation_id=conversation_id,
+        conversation_id=conversation_id.strip(),
+        assistant_message_id=normalized_message_id,
         metadata=metadata,
     )
 

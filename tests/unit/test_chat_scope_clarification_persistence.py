@@ -6,6 +6,9 @@ import pytest
 
 from api.routes.chat import SCOPE_CLARIFICATION_RESPONSE, chat
 from api.schemas.chat import ChatRequest
+from pliris.database.repositories.conversation_turns import (
+    ConversationTurnOutcome,
+)
 
 
 class FakeDetector:
@@ -37,8 +40,16 @@ class FakeTurnRepository:
     def __init__(self) -> None:
         self.calls: list[dict[str, object]] = []
 
-    async def persist_turn(self, **kwargs: object) -> None:
+    async def persist_turn(
+        self, **kwargs: object
+    ) -> ConversationTurnOutcome:
         self.calls.append(kwargs)
+        return ConversationTurnOutcome(
+            client_session_id=str(kwargs["client_session_id"]),
+            database_conversation_id="00000000-0000-0000-0000-000000000022",
+            user_message_id="00000000-0000-0000-0000-000000000023",
+            assistant_message_id="00000000-0000-0000-0000-000000000024",
+        )
 
 
 class MustNotRun:
@@ -67,6 +78,8 @@ async def test_clarification_issues_token_and_persists_turn() -> None:
 
     assert response.response == SCOPE_CLARIFICATION_RESPONSE
     assert response.conversation_id == "signed-conversation-token"
+    assert str(response.assistant_message_id) == "00000000-0000-0000-0000-000000000024"
+    assert response.metadata["persistence"]["status"] == "completed"
     assert turns.calls == [
         {
             "client_session_id": "signed-conversation-token",

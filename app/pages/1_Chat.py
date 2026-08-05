@@ -55,9 +55,12 @@ if not st.session_state.pliris_messages:
         "planning, or project risks."
     )
 
-for message in st.session_state.pliris_messages:
+for message_index, message in enumerate(st.session_state.pliris_messages):
     if message["role"] == "user":
-        render_user_message(message["content"])
+        render_user_message(
+            message["content"],
+            copy_key=str(message.get("copy_key") or f"history-user-{message_index}"),
+        )
         continue
 
     render_assistant_message(
@@ -93,8 +96,13 @@ prompt = st.chat_input(
 )
 
 if prompt:
-    st.session_state.pliris_messages.append({"role": "user", "content": prompt})
-    render_user_message(prompt)
+    user_message = {
+        "role": "user",
+        "content": prompt,
+        "copy_key": f"user-{uuid4()}",
+    }
+    st.session_state.pliris_messages.append(user_message)
+    render_user_message(prompt, copy_key=user_message["copy_key"])
 
     client = ChatClient(settings)
 
@@ -122,6 +130,7 @@ if prompt:
                 "confidence": reply.confidence,
                 "scope": reply.scope,
                 "conversation_id": reply.conversation_id,
+                "assistant_message_id": reply.assistant_message_id,
                 "metadata": reply.metadata,
                 "insufficient_evidence": bool(reply.metadata.get("insufficient_evidence", False)),
             }

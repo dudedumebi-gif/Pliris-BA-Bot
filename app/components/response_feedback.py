@@ -4,6 +4,7 @@ from typing import Any
 
 import streamlit as st
 
+from app.components.chat_message import render_copy_action
 from app.response_feedback import feedback_state_key, response_feedback_target
 from app.services.feedback_client import FeedbackClient, FeedbackServiceError
 
@@ -17,7 +18,17 @@ def render_response_feedback(
     """Render response-bound thumbs and optional structured feedback."""
 
     target = response_feedback_target(message)
+    message_content = message.get("content")
     if target is None:
+        if isinstance(message_content, str):
+            fallback_key = (
+                f"assistant-unrated:{message.get('conversation_id')}:{message_content}"
+            )
+            render_copy_action(
+                message_content,
+                key=fallback_key,
+                label="Copy response",
+            )
         return
 
     state_key = feedback_state_key(target.assistant_message_id)
@@ -27,7 +38,14 @@ def render_response_feedback(
         st.session_state[state_key] = state
 
     st.caption("Was this response helpful?")
-    positive, negative, _ = st.columns([1, 1, 4])
+    copy, positive, negative, _ = st.columns([0.6, 1, 1, 4])
+    with copy:
+        if isinstance(message_content, str):
+            render_copy_action(
+                message_content,
+                key=f"assistant-{target.assistant_message_id}",
+                label="Copy response",
+            )
     with positive:
         helpful = st.button(
             "👍 Helpful",

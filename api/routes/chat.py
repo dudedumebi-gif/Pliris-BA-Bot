@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from functools import lru_cache
 from typing import Annotated, Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -24,6 +25,7 @@ from pliris.database.repositories.conversation_history import (
     ConversationHistoryRepository,
 )
 from pliris.database.repositories.conversation_turns import (
+    ConversationTurnOutcome,
     ConversationTurnRepository,
 )
 from pliris.database.repositories.grounded_persistence import (
@@ -93,6 +95,13 @@ def get_conversation_history_repository() -> ConversationHistoryRepository:
 
 
 @lru_cache
+def get_conversation_turn_repository() -> ConversationTurnRepository:
+    """Return the repository for deterministic non-grounded chat turns."""
+
+    return ConversationTurnRepository()
+
+
+@lru_cache
 def get_conversation_context_resolver() -> ConversationContextResolver:
     """Return the deterministic follow-up resolver."""
 
@@ -130,6 +139,10 @@ ConversationHistoryDependency = Annotated[
     ConversationHistoryRepository,
     Depends(get_conversation_history_repository),
 ]
+ConversationTurnDependency = Annotated[
+    ConversationTurnRepository,
+    Depends(get_conversation_turn_repository),
+]
 ConversationContextDependency = Annotated[
     ConversationContextResolver,
     Depends(get_conversation_context_resolver),
@@ -147,6 +160,7 @@ async def chat_endpoint(
     event_logger: EventLoggerDependency,
     conversation_tokens: ConversationTokenDependency,
     conversation_history: ConversationHistoryDependency,
+    conversation_turns: ConversationTurnDependency,
     context_resolver: ConversationContextDependency,
 ) -> ChatResponse:
     """FastAPI dependency-injected public chat endpoint."""
@@ -161,6 +175,7 @@ async def chat_endpoint(
         event_logger=event_logger,
         conversation_tokens=conversation_tokens,
         conversation_history=conversation_history,
+        conversation_turns=conversation_turns,
         context_resolver=context_resolver,
     )
 
@@ -229,19 +244,20 @@ async def chat(
                     category=str(scope_result["category"]),
                     confidence=_scope_confidence(scope_result),
                 )
-            if session_id is not None and conversation_id is None:
-                token_manager = conversation_tokens or get_conversation_token_manager()
-                conversation_id = token_manager.issue(session_id)
-
-            if session_id is not None and conversation_id is not None:
-                turn_repository = conversation_turns or ConversationTurnRepository()
-                await turn_repository.persist_turn(
-                    client_session_id=conversation_id,
-                    user_message=request.message,
-                    assistant_message=SCOPE_CLARIFICATION_RESPONSE,
-                    scope_status="borderline",
-                    scope_confidence=_scope_confidence(scope_result) or 0.0,
-                )
+            (
+                conversation_id,
+                assistant_message_id,
+                persistence_metadata,
+            ) = await _persist_non_grounded_response(
+                session_id=session_id,
+                conversation_id=conversation_id,
+                user_message=request.message,
+                assistant_message=SCOPE_CLARIFICATION_RESPONSE,
+                scope_status="borderline",
+                scope_confidence=_scope_confidence(scope_result) or 0.0,
+                conversation_tokens=conversation_tokens,
+                conversation_turns=conversation_turns,
+            )
 
             return ChatResponse(
                 response=SCOPE_CLARIFICATION_RESPONSE,
@@ -249,9 +265,11 @@ async def chat(
                 confidence=0.0,
                 scope=str(scope_result["category"]),
                 conversation_id=conversation_id,
+                assistant_message_id=assistant_message_id,
                 metadata={
                     "insufficient_evidence": False,
                     "guardrail": "scope_clarification",
+                    "persistence": persistence_metadata,
                     "scope_decision": scope_metadata,
                     "conversation_context": resolution.metadata(),
                 },
@@ -268,15 +286,31 @@ async def chat(
                 "Query classified out of scope for user %s",
                 user["id"],
             )
+            (
+                conversation_id,
+                assistant_message_id,
+                persistence_metadata,
+            ) = await _persist_non_grounded_response(
+                session_id=session_id,
+                conversation_id=conversation_id,
+                user_message=request.message,
+                assistant_message=OUT_OF_SCOPE_RESPONSE,
+                scope_status="out_of_scope",
+                scope_confidence=_scope_confidence(scope_result) or 0.0,
+                conversation_tokens=conversation_tokens,
+                conversation_turns=conversation_turns,
+            )
             return ChatResponse(
                 response=OUT_OF_SCOPE_RESPONSE,
                 citations=[],
                 confidence=0.0,
                 scope=scope_result["category"],
                 conversation_id=conversation_id,
+                assistant_message_id=assistant_message_id,
                 metadata={
                     "insufficient_evidence": False,
                     "guardrail": "out_of_scope",
+                    "persistence": persistence_metadata,
                     "scope_decision": scope_metadata,
                     "conversation_context": resolution.metadata(),
                 },
@@ -311,6 +345,11 @@ async def chat(
 
         result = await orchestrator.process_query(**pipeline_arguments)
         result_data = result.to_dict()
+        assistant_message_id = _persisted_assistant_message_id(
+            result_data.get("metadata")
+        )
+        if session_id is not None and assistant_message_id is None:
+            raise RuntimeError("Successful chat response was not persisted.")
 
         return ChatResponse(
             response=result_data["response"],
@@ -318,6 +357,7 @@ async def chat(
             confidence=result_data["confidence"],
             scope=scope_result["category"],
             conversation_id=result_data["conversation_id"],
+            assistant_message_id=assistant_message_id,
             metadata={
                 "insufficient_evidence": result_data["insufficient_evidence"],
                 "model": result_data["model"],
@@ -356,6 +396,52 @@ async def chat_stream(request: ChatRequest) -> None:
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail="Streaming not yet implemented",
     )
+
+
+async def _persist_non_grounded_response(
+    *,
+    session_id: str | None,
+    conversation_id: str | None,
+    user_message: str,
+    assistant_message: str,
+    scope_status: str,
+    scope_confidence: float,
+    conversation_tokens: ConversationTokenManager | None,
+    conversation_turns: ConversationTurnRepository | None,
+) -> tuple[str | None, str | None, dict[str, Any]]:
+    """Persist a deterministic assistant response without calling a model."""
+
+    if session_id is None:
+        return conversation_id, None, {"status": "disabled"}
+
+    token_manager = conversation_tokens or get_conversation_token_manager()
+    resolved_conversation_id = conversation_id or token_manager.issue(session_id)
+    repository = conversation_turns or get_conversation_turn_repository()
+    outcome: ConversationTurnOutcome = await repository.persist_turn(
+        client_session_id=resolved_conversation_id,
+        user_message=user_message,
+        assistant_message=assistant_message,
+        scope_status=scope_status,
+        scope_confidence=scope_confidence,
+    )
+    return (
+        outcome.client_session_id,
+        outcome.assistant_message_id,
+        {"status": "completed", **outcome.to_dict()},
+    )
+
+
+def _persisted_assistant_message_id(metadata: Any) -> str | None:
+    if not isinstance(metadata, dict):
+        return None
+    persistence = metadata.get("persistence")
+    if not isinstance(persistence, dict) or persistence.get("status") != "completed":
+        return None
+    value = persistence.get("assistant_message_id")
+    try:
+        return str(UUID(str(value)))
+    except (TypeError, ValueError, AttributeError):
+        return None
 
 
 def _validated_conversation_id(
