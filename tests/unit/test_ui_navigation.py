@@ -19,9 +19,11 @@ def test_developer_navigation_exposes_protected_shell_and_chat() -> None:
     assert [page.title for page in manifest["Developer"]] == [
         "Developer Console",
         "Sources",
+        "Response Feedback",
     ]
     assert manifest["Developer"][0].path == ("app/developer_pages/0_Developer.py")
     assert manifest["Developer"][1].path == ("app/developer_pages/2_Sources.py")
+    assert manifest["Developer"][2].path == ("app/developer_pages/3_Feedback.py")
     assert [page.title for page in manifest["Workspace"]] == ["Chat"]
 
 

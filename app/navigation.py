@@ -35,6 +35,12 @@ DEVELOPER_SOURCES_PAGE = PageSpec(
     icon="📚",
 )
 
+DEVELOPER_FEEDBACK_PAGE = PageSpec(
+    path="app/developer_pages/3_Feedback.py",
+    title="Response Feedback",
+    icon="💬",
+)
+
 
 def navigation_manifest(
     mode: UIMode,
@@ -48,6 +54,7 @@ def navigation_manifest(
         "Developer": [
             DEVELOPER_HOME_PAGE,
             DEVELOPER_SOURCES_PAGE,
+            DEVELOPER_FEEDBACK_PAGE,
         ],
         "Workspace": [
             PageSpec(

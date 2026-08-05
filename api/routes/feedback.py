@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from api.conversation_tokens import (
     ConversationAccessDenied,
@@ -11,8 +11,14 @@ from api.conversation_tokens import (
     MalformedConversationToken,
     get_conversation_token_manager,
 )
+from api.developer_access import require_developer_access
 from api.guest_access import get_guest_user
-from api.schemas.feedback import FeedbackCreate, FeedbackResponse
+from api.schemas.feedback import (
+    FeedbackCreate,
+    FeedbackListResponse,
+    FeedbackResponse,
+    FeedbackStats,
+)
 from pliris.database.repositories.feedback import (
     FeedbackRepository,
     FeedbackTargetNotFoundError,
@@ -96,3 +102,66 @@ async def submit_feedback(
         ) from exc
 
     return FeedbackResponse.model_validate({**result, "status": "submitted"})
+
+
+@router.get(
+    "/stats",
+    response_model=FeedbackStats,
+    dependencies=[Depends(require_developer_access)],
+)
+async def get_feedback_stats(
+    repository: FeedbackRepositoryDependency,
+) -> FeedbackStats:
+    """Return protected aggregate feedback counts."""
+
+    try:
+        return FeedbackStats.model_validate(await repository.get_stats())
+    except Exception as exc:
+        logger.exception("Failed to fetch feedback statistics")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch feedback statistics.",
+        ) from exc
+
+
+@router.get(
+    "/",
+    response_model=FeedbackListResponse,
+    dependencies=[Depends(require_developer_access)],
+)
+async def list_feedback(
+    repository: FeedbackRepositoryDependency,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    rating: Annotated[int | None, Query()] = None,
+    citation_helpful: Annotated[bool | None, Query()] = None,
+    scope_decision_correct: Annotated[bool | None, Query()] = None,
+) -> FeedbackListResponse:
+    """List protected response-level feedback without guest identifiers."""
+
+    if rating is not None and rating not in {-1, 1}:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="rating must be -1 or 1.",
+        )
+
+    try:
+        items, total = await repository.list_feedback(
+            limit=limit,
+            offset=offset,
+            rating=rating,
+            citation_helpful=citation_helpful,
+            scope_decision_correct=scope_decision_correct,
+        )
+        return FeedbackListResponse(
+            items=items,
+            total=total,
+            limit=limit,
+            offset=offset,
+        )
+    except Exception as exc:
+        logger.exception("Failed to list response feedback")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch response feedback.",
+        ) from exc

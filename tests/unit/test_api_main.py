@@ -30,3 +30,11 @@ def test_production_app_registers_public_feedback_route() -> None:
 
     assert "/api/feedback/" in paths
     assert "post" in paths["/api/feedback/"]
+
+
+def test_production_app_registers_protected_feedback_inspection_routes() -> None:
+    paths = app.openapi()["paths"]
+
+    assert "get" in paths["/api/feedback/"]
+    assert "/api/feedback/stats" in paths
+    assert "get" in paths["/api/feedback/stats"]
