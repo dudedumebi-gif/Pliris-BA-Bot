@@ -31,6 +31,7 @@ from pliris.database.repositories.grounded_persistence import (
 )
 from pliris.guardrails.prompt_injection import PromptInjectionDetector
 from pliris.guardrails.scope_classifier import ScopeClassifier
+from pliris.monitoring.events import EventLogger
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,13 @@ def get_prompt_injection_detector() -> PromptInjectionDetector:
 
 
 @lru_cache
+def get_event_logger() -> EventLogger:
+    """Return the fail-open operational event recorder."""
+
+    return EventLogger()
+
+
+@lru_cache
 def get_conversation_history_repository() -> ConversationHistoryRepository:
     """Return the bounded conversation-history reader."""
 
@@ -110,6 +118,10 @@ InjectionDetectorDependency = Annotated[
     PromptInjectionDetector,
     Depends(get_prompt_injection_detector),
 ]
+EventLoggerDependency = Annotated[
+    EventLogger,
+    Depends(get_event_logger),
+]
 ConversationTokenDependency = Annotated[
     ConversationTokenManager,
     Depends(get_conversation_token_manager),
@@ -132,6 +144,7 @@ async def chat_endpoint(
     scope_classifier: ScopeClassifierDependency,
     request_classifier: RequestClassifierDependency,
     prompt_injection_detector: InjectionDetectorDependency,
+    event_logger: EventLoggerDependency,
     conversation_tokens: ConversationTokenDependency,
     conversation_history: ConversationHistoryDependency,
     context_resolver: ConversationContextDependency,
@@ -145,6 +158,7 @@ async def chat_endpoint(
         scope_classifier=scope_classifier,
         request_classifier=request_classifier,
         prompt_injection_detector=prompt_injection_detector,
+        event_logger=event_logger,
         conversation_tokens=conversation_tokens,
         conversation_history=conversation_history,
         context_resolver=context_resolver,
@@ -159,6 +173,7 @@ async def chat(
     request_classifier: RequestClassifier,
     prompt_injection_detector: PromptInjectionDetector,
     *,
+    event_logger: EventLogger | None = None,
     conversation_tokens: ConversationTokenManager | None = None,
     conversation_history: ConversationHistoryRepository | None = None,
     conversation_turns: ConversationTurnRepository | None = None,
@@ -168,6 +183,10 @@ async def chat(
 
     try:
         if prompt_injection_detector.detect(request.message):
+            if event_logger is not None:
+                await event_logger.log_prompt_injection(
+                    message_length=len(request.message)
+                )
             logger.warning(
                 "Prompt injection detected from user %s",
                 user["id"],
@@ -204,6 +223,12 @@ async def chat(
         scope_metadata = _scope_metadata(scope_result)
 
         if scope_result.get("requires_clarification", False):
+            if event_logger is not None:
+                await event_logger.log_scope_decision(
+                    decision="clarification",
+                    category=str(scope_result["category"]),
+                    confidence=_scope_confidence(scope_result),
+                )
             if session_id is not None and conversation_id is None:
                 token_manager = conversation_tokens or get_conversation_token_manager()
                 conversation_id = token_manager.issue(session_id)
@@ -233,6 +258,12 @@ async def chat(
             )
 
         if not scope_result["in_scope"]:
+            if event_logger is not None:
+                await event_logger.log_scope_decision(
+                    decision="out_of_scope",
+                    category=str(scope_result["category"]),
+                    confidence=_scope_confidence(scope_result),
+                )
             logger.info(
                 "Query classified out of scope for user %s",
                 user["id"],
@@ -304,6 +335,11 @@ async def chat(
     except HTTPException:
         raise
     except Exception as exc:
+        if event_logger is not None:
+            await event_logger.log_chat_failure(
+                stage="chat_route",
+                error_type=type(exc).__name__,
+            )
         logger.exception("Error processing chat request")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

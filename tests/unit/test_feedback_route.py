@@ -11,7 +11,7 @@ from api.conversation_tokens import (
     get_conversation_token_manager,
 )
 from api.guest_access import get_guest_user
-from api.routes.feedback import get_feedback_repository, router
+from api.routes.feedback import get_event_logger, get_feedback_repository, router
 from pliris.database.repositories.feedback import FeedbackTargetNotFoundError
 
 
@@ -38,12 +38,26 @@ class FakeRepository:
         }
 
 
+class FakeEventLogger:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict]] = []
+
+    async def log_feedback_submitted(self, **values):
+        self.calls.append(("submitted", values))
+        return "event-1"
+
+    async def log_feedback_failure(self, **values):
+        self.calls.append(("failed", values))
+        return "event-2"
+
+
 def _client():
     session_id = uuid4()
     tokens = ConversationTokenManager("test-secret")
     conversation_id = tokens.issue(str(session_id))
     assistant_message_id = uuid4()
     repository = FakeRepository(assistant_message_id)
+    event_logger = FakeEventLogger()
 
     app = FastAPI()
     app.include_router(router, prefix="/api/feedback")
@@ -54,6 +68,7 @@ def _client():
     }
     app.dependency_overrides[get_conversation_token_manager] = lambda: tokens
     app.dependency_overrides[get_feedback_repository] = lambda: repository
+    app.dependency_overrides[get_event_logger] = lambda: event_logger
 
     return (
         TestClient(app),
@@ -62,6 +77,7 @@ def _client():
         session_id,
         conversation_id,
         assistant_message_id,
+        event_logger,
     )
 
 
@@ -77,7 +93,15 @@ def _payload(conversation_id: str, assistant_message_id: UUID) -> dict:
 
 
 def test_feedback_route_upserts_session_owned_response() -> None:
-    client, repository, _, _, conversation_id, assistant_message_id = _client()
+    (
+        client,
+        repository,
+        _,
+        _,
+        conversation_id,
+        assistant_message_id,
+        event_logger,
+    ) = _client()
 
     response = client.post(
         "/api/feedback/",
@@ -89,10 +113,22 @@ def test_feedback_route_upserts_session_owned_response() -> None:
     assert response.json()["assistant_message_id"] == str(assistant_message_id)
     assert repository.calls[0]["client_session_id"] == conversation_id
     assert repository.calls[0]["comment"] == "Useful answer."
+    assert event_logger.calls == [
+        (
+            "submitted",
+            {
+                "message_id": assistant_message_id,
+                "rating": 1,
+                "has_comment": True,
+                "citation_answered": True,
+                "scope_answered": False,
+            },
+        )
+    ]
 
 
 def test_feedback_route_rejects_invalid_or_foreign_conversation_token() -> None:
-    client, repository, tokens, _, _, assistant_message_id = _client()
+    client, repository, tokens, _, _, assistant_message_id, event_logger = _client()
 
     malformed = client.post(
         "/api/feedback/",
@@ -107,10 +143,19 @@ def test_feedback_route_rejects_invalid_or_foreign_conversation_token() -> None:
     assert malformed.status_code == 400
     assert foreign.status_code == 403
     assert repository.calls == []
+    assert event_logger.calls == []
 
 
 def test_feedback_route_hides_unowned_message_and_database_errors() -> None:
-    client, repository, _, _, conversation_id, assistant_message_id = _client()
+    (
+        client,
+        repository,
+        _,
+        _,
+        conversation_id,
+        assistant_message_id,
+        event_logger,
+    ) = _client()
 
     repository.mode = "not_found"
     missing = client.post(
@@ -128,10 +173,34 @@ def test_feedback_route_hides_unowned_message_and_database_errors() -> None:
     assert failed.status_code == 500
     assert failed.json() == {"detail": "Failed to submit feedback."}
     assert "private database detail" not in failed.text
+    assert event_logger.calls == [
+        (
+            "failed",
+            {
+                "reason": "target_not_found",
+                "message_id": assistant_message_id,
+            },
+        ),
+        (
+            "failed",
+            {
+                "reason": "repository_error",
+                "message_id": assistant_message_id,
+            },
+        ),
+    ]
 
 
 def test_feedback_route_validates_rating_comment_and_extra_fields() -> None:
-    client, repository, _, _, conversation_id, assistant_message_id = _client()
+    (
+        client,
+        repository,
+        _,
+        _,
+        conversation_id,
+        assistant_message_id,
+        event_logger,
+    ) = _client()
     payload = _payload(conversation_id, assistant_message_id)
 
     invalid_rating = client.post(
@@ -151,3 +220,4 @@ def test_feedback_route_validates_rating_comment_and_extra_fields() -> None:
     assert long_comment.status_code == 422
     assert extra_field.status_code == 422
     assert repository.calls == []
+    assert event_logger.calls == []

@@ -10,6 +10,7 @@ from api.routes.chat import (
     OUT_OF_SCOPE_RESPONSE,
     chat,
     chat_stream,
+    get_event_logger,
     get_grounded_orchestrator,
     get_prompt_injection_detector,
     get_request_classifier,
@@ -32,6 +33,23 @@ class FakeInjectionDetector:
     def detect(self, message: str) -> bool:
         self.messages.append(message)
         return self.detected
+
+
+class FakeEventLogger:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict[str, Any]]] = []
+
+    async def log_prompt_injection(self, **values: Any) -> str:
+        self.calls.append(("prompt_injection", values))
+        return "event-1"
+
+    async def log_scope_decision(self, **values: Any) -> str:
+        self.calls.append(("scope_decision", values))
+        return "event-2"
+
+    async def log_chat_failure(self, **values: Any) -> str:
+        self.calls.append(("chat_failure", values))
+        return "event-3"
 
 
 class FakeScopeClassifier:
@@ -230,6 +248,7 @@ async def test_chat_preserves_exact_out_of_scope_response() -> None:
         category="out_of_scope",
     )
     request_classifier = FakeRequestClassifier()
+    event_logger = FakeEventLogger()
 
     response = await chat(
         request=ChatRequest(message="Tell me a sports score."),
@@ -238,6 +257,7 @@ async def test_chat_preserves_exact_out_of_scope_response() -> None:
         scope_classifier=scope,
         request_classifier=request_classifier,
         prompt_injection_detector=FakeInjectionDetector(),
+        event_logger=event_logger,
     )
 
     assert response.response == OUT_OF_SCOPE_RESPONSE
@@ -253,12 +273,23 @@ async def test_chat_preserves_exact_out_of_scope_response() -> None:
     assert response.metadata["guardrail"] == "out_of_scope"
     assert orchestrator.calls == []
     assert request_classifier.messages == []
+    assert event_logger.calls == [
+        (
+            "scope_decision",
+            {
+                "decision": "out_of_scope",
+                "category": "out_of_scope",
+                "confidence": None,
+            },
+        )
+    ]
 
 
 @pytest.mark.asyncio
 async def test_chat_blocks_prompt_injection_before_scope_check() -> None:
     scope = FakeScopeClassifier()
     request_classifier = FakeRequestClassifier()
+    event_logger = FakeEventLogger()
 
     with pytest.raises(HTTPException) as error:
         await chat(
@@ -268,12 +299,16 @@ async def test_chat_blocks_prompt_injection_before_scope_check() -> None:
             scope_classifier=scope,
             request_classifier=request_classifier,
             prompt_injection_detector=FakeInjectionDetector(detected=True),
+            event_logger=event_logger,
         )
 
     assert error.value.status_code == 400
     assert error.value.detail == ("Potential prompt injection detected")
     assert scope.messages == []
     assert request_classifier.messages == []
+    assert event_logger.calls == [
+        ("prompt_injection", {"message_length": 29})
+    ]
 
 
 @pytest.mark.asyncio
@@ -301,6 +336,7 @@ async def test_chat_returns_insufficient_evidence_metadata() -> None:
 
 @pytest.mark.asyncio
 async def test_chat_converts_pipeline_failure_to_http_500() -> None:
+    event_logger = FakeEventLogger()
     with pytest.raises(HTTPException) as error:
         await chat(
             request=ChatRequest(message="What is traceability?"),
@@ -309,11 +345,18 @@ async def test_chat_converts_pipeline_failure_to_http_500() -> None:
             scope_classifier=FakeScopeClassifier(),
             request_classifier=FakeRequestClassifier(),
             prompt_injection_detector=FakeInjectionDetector(),
+            event_logger=event_logger,
         )
 
     assert error.value.status_code == 500
     assert error.value.detail == ("An error occurred while processing your request")
     assert isinstance(error.value.__cause__, RuntimeError)
+    assert event_logger.calls == [
+        (
+            "chat_failure",
+            {"stage": "chat_route", "error_type": "RuntimeError"},
+        )
+    ]
 
 
 @pytest.mark.asyncio
@@ -331,6 +374,7 @@ def build_test_client(
     scope_classifier: FakeScopeClassifier,
     request_classifier: FakeRequestClassifier,
     detector: FakeInjectionDetector,
+    event_logger: FakeEventLogger | None = None,
 ) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/chat")
@@ -342,6 +386,9 @@ def build_test_client(
     app.dependency_overrides[get_scope_classifier] = lambda: scope_classifier
     app.dependency_overrides[get_request_classifier] = lambda: request_classifier
     app.dependency_overrides[get_prompt_injection_detector] = lambda: detector
+    app.dependency_overrides[get_event_logger] = lambda: (
+        event_logger or FakeEventLogger()
+    )
     return TestClient(app)
 
 

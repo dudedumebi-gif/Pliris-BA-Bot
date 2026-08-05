@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from functools import lru_cache
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -23,6 +24,7 @@ from pliris.database.repositories.feedback import (
     FeedbackRepository,
     FeedbackTargetNotFoundError,
 )
+from pliris.monitoring.events import EventLogger
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -30,6 +32,13 @@ router = APIRouter()
 
 def get_feedback_repository() -> FeedbackRepository:
     return FeedbackRepository()
+
+
+@lru_cache
+def get_event_logger() -> EventLogger:
+    """Return the fail-open operational event recorder."""
+
+    return EventLogger()
 
 
 UserDependency = Annotated[dict[str, str], Depends(get_guest_user)]
@@ -41,6 +50,10 @@ FeedbackRepositoryDependency = Annotated[
     FeedbackRepository,
     Depends(get_feedback_repository),
 ]
+EventLoggerDependency = Annotated[
+    EventLogger,
+    Depends(get_event_logger),
+]
 
 
 @router.post("/", response_model=FeedbackResponse)
@@ -49,6 +62,7 @@ async def submit_feedback(
     user: UserDependency,
     conversation_tokens: ConversationTokenDependency,
     repository: FeedbackRepositoryDependency,
+    event_logger: EventLoggerDependency,
 ) -> FeedbackResponse:
     """Create or replace feedback for one persisted assistant response."""
 
@@ -85,22 +99,41 @@ async def submit_feedback(
             comment=request.comment,
         )
     except FeedbackTargetNotFoundError as exc:
+        await event_logger.log_feedback_failure(
+            reason="target_not_found",
+            message_id=request.assistant_message_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Feedback target was not found.",
         ) from exc
     except ValueError as exc:
+        await event_logger.log_feedback_failure(
+            reason="invalid_values",
+            message_id=request.assistant_message_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Feedback values are not valid.",
         ) from exc
     except Exception as exc:
+        await event_logger.log_feedback_failure(
+            reason="repository_error",
+            message_id=request.assistant_message_id,
+        )
         logger.exception("Failed to persist response feedback")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to submit feedback.",
         ) from exc
 
+    await event_logger.log_feedback_submitted(
+        message_id=request.assistant_message_id,
+        rating=request.rating,
+        has_comment=request.comment is not None,
+        citation_answered=request.citation_helpful is not None,
+        scope_answered=request.scope_decision_correct is not None,
+    )
     return FeedbackResponse.model_validate({**result, "status": "submitted"})
 
 
