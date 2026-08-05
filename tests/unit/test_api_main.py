@@ -24,3 +24,9 @@ def test_production_app_registers_protected_source_routes() -> None:
     assert "/api/sources/{source_id}/chunks" in paths
     assert "/api/sources/stage" in paths
     assert "post" in paths["/api/sources/stage"]
+
+def test_production_app_registers_public_feedback_route() -> None:
+    paths = app.openapi()["paths"]
+
+    assert "/api/feedback/" in paths
+    assert "post" in paths["/api/feedback/"]

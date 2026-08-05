@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from api.routes.chat import router as chat_router
+from api.routes.feedback import router as feedback_router
 from api.routes.health import router as health_router
 from api.routes.source_lifecycle import router as source_lifecycle_router
 from api.routes.source_staging import router as source_staging_router
@@ -31,6 +32,7 @@ app = FastAPI(
 
 app.include_router(health_router)
 app.include_router(chat_router, prefix="/api/chat", tags=["chat"])
+app.include_router(feedback_router, prefix="/api/feedback", tags=["feedback"])
 app.include_router(sources_router, prefix="/api/sources", tags=["developer-sources"])
 app.include_router(
     source_staging_router,
