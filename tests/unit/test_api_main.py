@@ -25,6 +25,7 @@ def test_production_app_registers_protected_source_routes() -> None:
     assert "/api/sources/stage" in paths
     assert "post" in paths["/api/sources/stage"]
 
+
 def test_production_app_registers_public_feedback_route() -> None:
     paths = app.openapi()["paths"]
 
@@ -38,3 +39,10 @@ def test_production_app_registers_protected_feedback_inspection_routes() -> None
     assert "get" in paths["/api/feedback/"]
     assert "/api/feedback/stats" in paths
     assert "get" in paths["/api/feedback/stats"]
+
+
+def test_production_app_registers_protected_monitoring_event_route() -> None:
+    paths = app.openapi()["paths"]
+
+    assert "/api/monitoring/events" in paths
+    assert "get" in paths["/api/monitoring/events"]
