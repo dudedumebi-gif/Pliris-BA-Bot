@@ -83,6 +83,9 @@ def test_copy_action_html_encodes_untrusted_message_and_reports_success() -> Non
     assert message not in rendered
     assert b64encode(message.encode("utf-8")).decode("ascii") in rendered
     assert 'aria-label="Copy request"' in rendered
+    assert 'class="pliris-copy-text">Copy</span>' in rendered
+    assert "color: var(--text-color, #fafafa);" in rendered
+    assert "width: auto;" in rendered
     assert "navigator.clipboard.writeText(message)" in rendered
     assert 'document.execCommand("copy")' in rendered
     assert 'status.textContent = "Copied"' in rendered

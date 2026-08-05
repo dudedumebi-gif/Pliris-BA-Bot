@@ -11,6 +11,7 @@ _COPY_ACTION_TEMPLATE = """
       <rect x="8" y="8" width="11" height="11" rx="2"></rect>
       <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
     </svg>
+    <span class="pliris-copy-text">Copy</span>
   </button>
   <span role="status" aria-live="polite"></span>
 </div>
@@ -24,15 +25,19 @@ _COPY_ACTION_TEMPLATE = """
   .pliris-copy-action button {
     align-items: center;
     background: transparent;
-    border: 1px solid transparent;
+    background: rgba(128, 128, 128, 0.08);
+    border: 1px solid rgba(128, 128, 128, 0.28);
     border-radius: 0.45rem;
-    color: inherit;
+    color: var(--text-color, #fafafa);
     cursor: pointer;
     display: inline-flex;
+    font: inherit;
+    gap: 0.35rem;
     height: 2rem;
     justify-content: center;
-    padding: 0.3rem;
-    width: 2rem;
+    min-width: 4.5rem;
+    padding: 0.3rem 0.55rem;
+    width: auto;
   }
   .pliris-copy-action button:hover,
   .pliris-copy-action button:focus-visible {
@@ -52,7 +57,12 @@ _COPY_ACTION_TEMPLATE = """
     stroke-width: 1.8;
     width: 1.1rem;
   }
-  .pliris-copy-action span {
+  .pliris-copy-action .pliris-copy-text {
+    font-size: 0.82rem;
+    font-weight: 500;
+    opacity: 1;
+  }
+  .pliris-copy-action > span {
     font-size: 0.78rem;
     opacity: 0.8;
   }
