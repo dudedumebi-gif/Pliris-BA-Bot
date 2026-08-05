@@ -9,7 +9,9 @@ from app.components.chat_message import (
     render_assistant_message,
     render_user_message,
 )
+from app.components.response_feedback import render_response_feedback
 from app.services.chat_client import ChatClient, ChatServiceError
+from app.services.feedback_client import FeedbackClient
 from app.ui_config import UIMode, load_ui_settings
 
 settings = load_ui_settings()
@@ -27,6 +29,8 @@ st.title("💬 Pliris BA Bot")
 st.write(
     "Ask a question about Business Analysis, Business Systems Analysis, or Project Management."
 )
+
+feedback_client = FeedbackClient(settings)
 
 with st.sidebar:
     st.markdown("### Pliris")
@@ -60,6 +64,11 @@ for message in st.session_state.pliris_messages:
         message["content"],
         citations=message.get("citations"),
         confidence=message.get("confidence"),
+    )
+    render_response_feedback(
+        message,
+        client=feedback_client,
+        session_id=st.session_state.pliris_guest_session_id,
     )
 
     if message.get("insufficient_evidence"):
@@ -122,6 +131,11 @@ if prompt:
                 assistant_message["content"],
                 citations=assistant_message["citations"],
                 confidence=assistant_message["confidence"],
+            )
+            render_response_feedback(
+                assistant_message,
+                client=feedback_client,
+                session_id=st.session_state.pliris_guest_session_id,
             )
 
             if assistant_message["insufficient_evidence"]:
