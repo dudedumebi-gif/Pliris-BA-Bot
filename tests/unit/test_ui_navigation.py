@@ -20,10 +20,12 @@ def test_developer_navigation_exposes_protected_shell_and_chat() -> None:
         "Developer Console",
         "Sources",
         "Response Feedback",
+        "Monitoring",
     ]
     assert manifest["Developer"][0].path == ("app/developer_pages/0_Developer.py")
     assert manifest["Developer"][1].path == ("app/developer_pages/2_Sources.py")
     assert manifest["Developer"][2].path == ("app/developer_pages/3_Feedback.py")
+    assert manifest["Developer"][3].path == ("app/developer_pages/4_Monitoring.py")
     assert [page.title for page in manifest["Workspace"]] == ["Chat"]
 
 
@@ -46,3 +48,15 @@ def test_sources_page_limits_staging_to_controlled_manifest() -> None:
     assert "client.stage_pdf" in source
     assert "No ingestion was started." in source
     assert 'st.selectbox("Manifest source"' not in source
+
+
+def test_monitoring_page_uses_protected_aggregate_client() -> None:
+    from pathlib import Path
+
+    source = Path("app/developer_pages/4_Monitoring.py").read_text(encoding="utf-8")
+
+    assert "MonitoringDashboardClient" in source
+    assert "/api/monitoring" not in source
+    assert "recent_events" not in source
+    assert "st.json" not in source
+    assert "aggregate-only" in source

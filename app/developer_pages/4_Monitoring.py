@@ -1,154 +1,146 @@
-import httpx
+from __future__ import annotations
+
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(page_title="Monitoring - Pliris BA Bot", page_icon="📊", layout="wide")
+from app.monitoring_view import (
+    format_count,
+    format_generated_at,
+    format_latency,
+    format_percentage,
+    window_hours,
+)
+from app.services.monitoring_client import (
+    MonitoringDashboardClient,
+    MonitoringDashboardServiceError,
+)
+from app.ui_config import load_ui_settings
 
-st.markdown("# 📊 System Monitoring")
-st.markdown("Real-time monitoring of system performance and usage metrics.")
+settings = load_ui_settings()
+client = MonitoringDashboardClient(settings)
 
-# Time range selector
-time_range = st.selectbox(
-    "Time Range", ["Last 24 Hours", "Last 7 Days", "Last 30 Days", "All Time"], index=0
+st.title("📊 System Monitoring")
+st.caption("Protected, aggregate-only operational and response-quality signals")
+
+window_col, refresh_col = st.columns([4, 1])
+with window_col:
+    selected_window = st.selectbox(
+        "Time range",
+        ["Last 24 hours", "Last 7 days", "Last 30 days"],
+        index=0,
+    )
+with refresh_col:
+    st.write("")
+    st.write("")
+    if st.button("Refresh", use_container_width=True):
+        st.rerun()
+
+try:
+    dashboard = client.get_dashboard(since_hours=window_hours(selected_window))
+except MonitoringDashboardServiceError as exc:
+    st.error(exc.user_message)
+    st.stop()
+
+summary = dashboard["summary"]
+metrics = st.columns(5)
+metrics[0].metric("Responses", format_count(summary["total_responses"]))
+metrics[1].metric(
+    "Active conversations",
+    format_count(summary["active_conversations"]),
+)
+metrics[2].metric("Average latency", format_latency(summary["avg_latency_ms"]))
+metrics[3].metric("P95 latency", format_latency(summary["p95_latency_ms"]))
+metrics[4].metric(
+    "Helpful feedback",
+    format_percentage(summary["helpful_feedback"], summary["feedback_records"]),
 )
 
-# Fetch monitoring data
-try:
-    with httpx.Client() as client:
-        response = client.get(
-            f"http://localhost:8000/api/monitoring?range={time_range}", timeout=30.0
-        )
-        response.raise_for_status()
-        monitoring_data = response.json()
+st.caption(
+    f"Generated {format_generated_at(dashboard['generated_at'])} · "
+    f"{summary['latency_samples']:,} latency samples · "
+    f"{summary['token_samples']:,} token samples"
+)
 
-    # Key metrics
-    col1, col2, col3, col4, col5 = st.columns(5)
-
-    with col1:
-        st.metric(
-            "Total Queries",
-            monitoring_data.get("total_queries", 0),
-            monitoring_data.get("queries_change", "0"),
-        )
-
-    with col2:
-        st.metric(
-            "Avg Response Time",
-            f"{monitoring_data.get('avg_response_time', 0):.2f}s",
-            f"{monitoring_data.get('response_time_change', 0):.2f}s",
-        )
-
-    with col3:
-        st.metric(
-            "Success Rate",
-            f"{monitoring_data.get('success_rate', 0):.1f}%",
-            f"{monitoring_data.get('success_rate_change', 0):.1f}%",
-        )
-
-    with col4:
-        st.metric(
-            "Avg Confidence",
-            f"{monitoring_data.get('avg_confidence', 0):.1f}%",
-            f"{monitoring_data.get('confidence_change', 0):.1f}%",
-        )
-
-    with col5:
-        st.metric(
-            "Active Users",
-            monitoring_data.get("active_users", 0),
-            monitoring_data.get("users_change", "0"),
-        )
-
-    st.markdown("---")
-
-    # Charts
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("### Query Volume Over Time")
-        if monitoring_data.get("query_timeline"):
-            df = pd.DataFrame(monitoring_data["query_timeline"])
-            st.line_chart(df.set_index("timestamp")["count"])
-        else:
-            st.info("No data available")
-
-    with col2:
-        st.markdown("### Response Time Distribution")
-        if monitoring_data.get("response_times"):
-            df = pd.DataFrame(monitoring_data["response_times"])
-            st.bar_chart(df["response_time"])
-        else:
-            st.info("No data available")
-
-    st.markdown("---")
-
-    # System health
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.markdown("### System Health")
-        health = monitoring_data.get("system_health", {})
-
-        if health.get("api_status") == "healthy":
-            st.success("✓ API Service")
-        else:
-            st.error("✗ API Service")
-
-        if health.get("database_status") == "healthy":
-            st.success("✓ Database")
-        else:
-            st.error("✗ Database")
-
-        if health.get("llm_status") == "healthy":
-            st.success("✓ LLM Service")
-        else:
-            st.error("✗ LLM Service")
-
-        if health.get("embedding_status") == "healthy":
-            st.success("✓ Embedding Service")
-        else:
-            st.error("✗ Embedding Service")
-
-    with col2:
-        st.markdown("### Resource Usage")
-        resources = monitoring_data.get("resources", {})
-
-        st.progress(resources.get("cpu_usage", 0) / 100)
-        st.caption(f"CPU: {resources.get('cpu_usage', 0)}%")
-
-        st.progress(resources.get("memory_usage", 0) / 100)
-        st.caption(f"Memory: {resources.get('memory_usage', 0)}%")
-
-        st.progress(resources.get("disk_usage", 0) / 100)
-        st.caption(f"Disk: {resources.get('disk_usage', 0)}%")
-
-    with col3:
-        st.markdown("### Error Breakdown")
-        errors = monitoring_data.get("errors", {})
-
-        if errors:
-            for error_type, count in errors.items():
-                st.markdown(f"- **{error_type}**: {count}")
-        else:
-            st.success("No errors in selected time range")
-
-    st.markdown("---")
-
-    # Recent events
-    st.markdown("### Recent Events")
-    if monitoring_data.get("recent_events"):
-        for event in monitoring_data["recent_events"]:
-            with st.expander(
-                f"{event.get('timestamp', 'Unknown')} - {event.get('type', 'Unknown')}"
-            ):
-                st.markdown(f"**Level:** {event.get('level', 'Unknown')}")
-                st.markdown(f"**Message:** {event.get('message', 'Unknown')}")
-                if event.get("metadata"):
-                    st.json(event["metadata"])
+volume_col, scope_col = st.columns(2)
+with volume_col:
+    st.subheader("Response volume")
+    timeline = dashboard["response_timeline"]
+    if timeline:
+        frame = pd.DataFrame(timeline)
+        frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True)
+        st.line_chart(frame.set_index("timestamp")["count"])
     else:
-        st.info("No recent events")
+        st.info("No responses were recorded in this time range.")
 
-except httpx.HTTPError as e:
-    st.error(f"Error fetching monitoring data: {e}")
-except Exception as e:
-    st.error(f"An error occurred: {e}")
+with scope_col:
+    st.subheader("Scope decisions")
+    scope = dashboard["scope_breakdown"]
+    if scope:
+        frame = pd.DataFrame(scope).set_index("name")
+        st.bar_chart(frame["count"])
+    else:
+        st.info("No scope decisions were recorded in this time range.")
+
+latency_col, model_col = st.columns(2)
+with latency_col:
+    st.subheader("Latency distribution")
+    latency = dashboard["latency_distribution"]
+    if latency:
+        frame = pd.DataFrame(latency).set_index("label")
+        st.bar_chart(frame["count"])
+    else:
+        st.info("No latency samples were recorded in this time range.")
+
+with model_col:
+    st.subheader("Model and token usage")
+    model_usage = dashboard["model_usage"]
+    if model_usage:
+        frame = pd.DataFrame(model_usage).rename(
+            columns={
+                "name": "Model",
+                "count": "Responses",
+                "input_tokens": "Input tokens",
+                "output_tokens": "Output tokens",
+            }
+        )
+        st.dataframe(frame, hide_index=True, use_container_width=True)
+    else:
+        st.info("No model usage was recorded in this time range.")
+
+quality_col, failure_col = st.columns(2)
+with quality_col:
+    st.subheader("Quality and safety")
+    quality = pd.DataFrame(
+        [
+            {"Signal": "Feedback records", "Count": summary["feedback_records"]},
+            {"Signal": "Helpful", "Count": summary["helpful_feedback"]},
+            {"Signal": "Not helpful", "Count": summary["unhelpful_feedback"]},
+            {"Signal": "With comments", "Count": summary["commented_feedback"]},
+            {
+                "Signal": "Prompt injections blocked",
+                "Count": summary["prompt_injection_blocks"],
+            },
+        ]
+    )
+    st.dataframe(quality, hide_index=True, use_container_width=True)
+
+with failure_col:
+    st.subheader("Failure breakdown")
+    failures = dashboard["failure_breakdown"]
+    if failures:
+        frame = pd.DataFrame(failures).set_index("name")
+        st.bar_chart(frame["count"])
+    else:
+        st.success("No failures were recorded in this time range.")
+
+st.caption(
+    f"Input tokens: {summary['input_tokens']:,} · "
+    f"Output tokens: {summary['output_tokens']:,} · "
+    f"Request failures: {summary['request_failures']:,} · "
+    f"Feedback submissions: {summary['feedback_submissions']:,}"
+)
+
+st.info(
+    "This dashboard is read-only and aggregate-only. It does not expose prompts, "
+    "responses, guest-session identifiers, conversation identifiers, or message identifiers."
+)

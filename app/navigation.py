@@ -41,6 +41,12 @@ DEVELOPER_FEEDBACK_PAGE = PageSpec(
     icon="💬",
 )
 
+DEVELOPER_MONITORING_PAGE = PageSpec(
+    path="app/developer_pages/4_Monitoring.py",
+    title="Monitoring",
+    icon="📊",
+)
+
 
 def navigation_manifest(
     mode: UIMode,
@@ -55,6 +61,7 @@ def navigation_manifest(
             DEVELOPER_HOME_PAGE,
             DEVELOPER_SOURCES_PAGE,
             DEVELOPER_FEEDBACK_PAGE,
+            DEVELOPER_MONITORING_PAGE,
         ],
         "Workspace": [
             PageSpec(
