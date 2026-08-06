@@ -172,3 +172,64 @@ def test_record_event_rolls_back_database_failures() -> None:
 
     assert connection.commits == 0
     assert connection.rollbacks == 1
+
+
+def test_get_dashboard_returns_only_aggregate_projections() -> None:
+    timestamp = datetime(2026, 8, 5, tzinfo=UTC)
+    connection = FakeConnection(
+        [
+            {
+                "one": {
+                    "total_responses": 8,
+                    "active_conversations": 3,
+                    "in_scope_responses": 5,
+                    "borderline_responses": 1,
+                    "out_of_scope_responses": 2,
+                    "latency_samples": 5,
+                    "avg_latency_ms": 1250.5,
+                    "p95_latency_ms": 2800.0,
+                    "input_tokens": 1200,
+                    "output_tokens": 400,
+                    "token_samples": 5,
+                    "feedback_records": 3,
+                    "helpful_feedback": 2,
+                    "unhelpful_feedback": 1,
+                    "commented_feedback": 1,
+                    "request_failures": 1,
+                    "prompt_injection_blocks": 2,
+                    "feedback_submissions": 4,
+                }
+            },
+            {"all": [{"timestamp": timestamp, "count": 8}]},
+            {"all": [{"name": "in_scope", "count": 5}]},
+            {"all": [{"label": "1-3s", "count": 4}]},
+            {"all": [{"name": "chat.request_failed", "count": 1}]},
+            {
+                "all": [
+                    {
+                        "name": "gpt-test",
+                        "count": 5,
+                        "input_tokens": 1200,
+                        "output_tokens": 400,
+                    }
+                ]
+            },
+        ]
+    )
+    repository = MonitoringRepository(connection_factory=lambda: connection)
+
+    result = asyncio.run(repository.get_dashboard(since_hours=168))
+
+    assert result["since_hours"] == 168
+    assert result["bucket"] == "day"
+    assert result["summary"]["total_responses"] == 8
+    assert result["summary"]["avg_latency_ms"] == 1250.5
+    assert result["response_timeline"] == [{"timestamp": timestamp, "count": 8}]
+    assert result["model_usage"][0]["input_tokens"] == 1200
+    assert len(connection.executions) == 6
+    assert connection.executions[0][1] == (168, 168, 168)
+    assert connection.executions[1][1] == ("day", 168)
+    serialized = repr(result)
+    assert "content" not in serialized
+    assert "client_session_id" not in serialized
+    assert "conversation_id" not in serialized

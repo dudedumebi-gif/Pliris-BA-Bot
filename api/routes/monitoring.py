@@ -7,9 +7,13 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from api.developer_access import require_developer_access
-from api.schemas.monitoring import MonitoringEventListResponse
+from api.schemas.monitoring import (
+    MonitoringDashboardResponse,
+    MonitoringEventListResponse,
+)
 from pliris.database.repositories.monitoring import MonitoringRepository
 from pliris.monitoring.contracts import validate_event_type
+from pliris.monitoring.metrics import MetricsCollector
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +26,40 @@ def get_monitoring_repository() -> MonitoringRepository:
 
     return MonitoringRepository()
 
+
+@lru_cache
+def get_metrics_collector() -> MetricsCollector:
+    """Return the process-level aggregate metrics collector."""
+
+    return MetricsCollector()
+
+
+@router.get(
+    "/dashboard",
+    response_model=MonitoringDashboardResponse,
+    dependencies=[Depends(require_developer_access)],
+)
+async def get_monitoring_dashboard(
+    since_hours: Annotated[int, Query(ge=1, le=720)] = 24,
+    collector: MetricsCollector = Depends(get_metrics_collector),
+) -> MonitoringDashboardResponse:
+    """Return protected usage, quality, latency, failure, and token aggregates."""
+
+    try:
+        return MonitoringDashboardResponse.model_validate(
+            await collector.get_dashboard(since_hours=since_hours)
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Invalid monitoring dashboard window.",
+        ) from exc
+    except Exception as exc:
+        logger.exception("Failed to fetch monitoring dashboard")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch monitoring dashboard.",
+        ) from exc
 
 @router.get(
     "/events",

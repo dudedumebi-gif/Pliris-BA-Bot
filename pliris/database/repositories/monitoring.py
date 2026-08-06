@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 from contextlib import AbstractContextManager
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -12,6 +13,11 @@ from pliris.monitoring.contracts import (
     validate_event_type,
     validate_severity,
 )
+from pliris.monitoring.dashboard_queries import DashboardQueries
+
+
+def _optional_float(value: Any) -> float | None:
+    return None if value is None else float(value)
 
 
 class MonitoringRepository:
@@ -181,6 +187,104 @@ class MonitoringRepository:
             item["properties"] = redact_event_properties(item.get("properties"))
             items.append(item)
         return items, total
+
+
+    async def get_dashboard(self, *, since_hours: int = 24) -> dict[str, Any]:
+        """Return aggregate-only monitoring metrics for a bounded time window."""
+
+        bucket = DashboardQueries.bucket_for_hours(since_hours)
+        return await asyncio.to_thread(
+            self._get_dashboard_sync,
+            since_hours,
+            bucket,
+        )
+
+    def _get_dashboard_sync(
+        self,
+        since_hours: int,
+        bucket: str,
+    ) -> dict[str, Any]:
+        with self.connection_factory() as connection:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        DashboardQueries.SUMMARY,
+                        (since_hours, since_hours, since_hours),
+                    )
+                    summary = cursor.fetchone() or {}
+
+                    cursor.execute(
+                        DashboardQueries.RESPONSE_TIMELINE,
+                        (bucket, since_hours),
+                    )
+                    response_timeline = cursor.fetchall()
+
+                    cursor.execute(
+                        DashboardQueries.SCOPE_BREAKDOWN,
+                        (since_hours,),
+                    )
+                    scope_breakdown = cursor.fetchall()
+
+                    cursor.execute(
+                        DashboardQueries.LATENCY_DISTRIBUTION,
+                        (since_hours,),
+                    )
+                    latency_distribution = cursor.fetchall()
+
+                    cursor.execute(
+                        DashboardQueries.FAILURE_BREAKDOWN,
+                        (since_hours,),
+                    )
+                    failure_breakdown = cursor.fetchall()
+
+                    cursor.execute(
+                        DashboardQueries.MODEL_USAGE,
+                        (since_hours,),
+                    )
+                    model_usage = cursor.fetchall()
+            except Exception:
+                connection.rollback()
+                raise
+
+        integer_fields = (
+            "total_responses",
+            "active_conversations",
+            "in_scope_responses",
+            "borderline_responses",
+            "out_of_scope_responses",
+            "latency_samples",
+            "input_tokens",
+            "output_tokens",
+            "token_samples",
+            "feedback_records",
+            "helpful_feedback",
+            "unhelpful_feedback",
+            "commented_feedback",
+            "request_failures",
+            "prompt_injection_blocks",
+            "feedback_submissions",
+        )
+        normalized_summary = {
+            field: int(summary.get(field) or 0) for field in integer_fields
+        }
+        normalized_summary.update(
+            {
+                "avg_latency_ms": _optional_float(summary.get("avg_latency_ms")),
+                "p95_latency_ms": _optional_float(summary.get("p95_latency_ms")),
+            }
+        )
+
+        return {
+            "generated_at": datetime.now(UTC),
+            "since_hours": since_hours,
+            "bucket": bucket,
+            "summary": normalized_summary,
+            "response_timeline": [dict(row) for row in response_timeline],
+            "scope_breakdown": [dict(row) for row in scope_breakdown],
+            "latency_distribution": [dict(row) for row in latency_distribution],
+            "failure_breakdown": [dict(row) for row in failure_breakdown],
+            "model_usage": [dict(row) for row in model_usage],
+        }
 
     async def log_event(self, event_type: str, data: dict[str, Any]) -> str:
         """Compatibility wrapper for internal event producers."""

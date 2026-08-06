@@ -46,3 +46,10 @@ def test_production_app_registers_protected_monitoring_event_route() -> None:
 
     assert "/api/monitoring/events" in paths
     assert "get" in paths["/api/monitoring/events"]
+
+
+def test_production_app_registers_protected_monitoring_dashboard_route() -> None:
+    paths = app.openapi()["paths"]
+
+    assert "/api/monitoring/dashboard" in paths
+    assert "get" in paths["/api/monitoring/dashboard"]
