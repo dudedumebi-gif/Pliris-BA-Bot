@@ -11,10 +11,10 @@ st.caption("Protected operational workspace")
 
 st.success("Developer access boundary is active.")
 
-st.markdown("### Phase 7 workspace")
+st.markdown("### Phase 7 operational workspace")
 st.write(
-    "This protected shell will host the developer capabilities completed "
-    "through the remaining Phase 7 steps."
+    "This protected shell brings together the source, feedback, monitoring, "
+    "and API diagnostics capabilities delivered through Phase 7."
 )
 
 col1, col2 = st.columns(2)
@@ -36,6 +36,6 @@ with col2:
     )
 
 st.info(
-    "The Chat page is active now. The remaining developer tools will be "
-    "added and verified in Phase 7 Steps 2-6."
+    "Phase 7 capabilities are available through the protected navigation. "
+    "Use Health & Readiness for live dependency and safe configuration checks."
 )

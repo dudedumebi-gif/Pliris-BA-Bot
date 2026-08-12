@@ -13,7 +13,10 @@ def test_production_app_keeps_health_and_root_routes() -> None:
     paths = app.openapi()["paths"]
 
     assert "/" in paths
-    assert any(path.startswith("/health") for path in paths)
+    assert "/health/live" in paths
+    assert "/health/ready" in paths
+    assert "/health/config" in paths
+    assert "/health/diagnostics" in paths
 
 
 def test_production_app_registers_protected_source_routes() -> None:

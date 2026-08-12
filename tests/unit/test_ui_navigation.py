@@ -21,11 +21,13 @@ def test_developer_navigation_exposes_protected_shell_and_chat() -> None:
         "Sources",
         "Response Feedback",
         "Monitoring",
+        "Health & Readiness",
     ]
     assert manifest["Developer"][0].path == ("app/developer_pages/0_Developer.py")
     assert manifest["Developer"][1].path == ("app/developer_pages/2_Sources.py")
     assert manifest["Developer"][2].path == ("app/developer_pages/3_Feedback.py")
     assert manifest["Developer"][3].path == ("app/developer_pages/4_Monitoring.py")
+    assert manifest["Developer"][4].path == ("app/developer_pages/5_Health.py")
     assert [page.title for page in manifest["Workspace"]] == ["Chat"]
 
 
@@ -60,3 +62,15 @@ def test_monitoring_page_uses_protected_aggregate_client() -> None:
     assert "recent_events" not in source
     assert "st.json" not in source
     assert "aggregate-only" in source
+
+
+def test_health_page_uses_protected_bounded_client() -> None:
+    from pathlib import Path
+
+    source = Path("app/developer_pages/5_Health.py").read_text(encoding="utf-8")
+
+    assert "HealthDiagnosticsClient" in source
+    assert "/health/" not in source
+    assert "st.json" not in source
+    assert "credentials" in source
+    assert "session identifiers" in source

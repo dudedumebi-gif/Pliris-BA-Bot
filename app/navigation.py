@@ -47,6 +47,12 @@ DEVELOPER_MONITORING_PAGE = PageSpec(
     icon="📊",
 )
 
+DEVELOPER_HEALTH_PAGE = PageSpec(
+    path="app/developer_pages/5_Health.py",
+    title="Health & Readiness",
+    icon="🩺",
+)
+
 
 def navigation_manifest(
     mode: UIMode,
@@ -62,6 +68,7 @@ def navigation_manifest(
             DEVELOPER_SOURCES_PAGE,
             DEVELOPER_FEEDBACK_PAGE,
             DEVELOPER_MONITORING_PAGE,
+            DEVELOPER_HEALTH_PAGE,
         ],
         "Workspace": [
             PageSpec(
