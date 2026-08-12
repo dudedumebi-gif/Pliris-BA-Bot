@@ -3,7 +3,7 @@
 ## Release gate
 
 `.github/workflows/security.yml` runs on every pull request to `main` and on manual dispatch. It
-uses immutable action SHAs, Trivy 0.72.0, and CodeQL 4.37.6.
+uses immutable action SHAs, Trivy 0.73.0, and CodeQL 4.37.6.
 
 | Coverage | Scanner | Evidence |
 |---|---|---|
@@ -41,7 +41,7 @@ time-bounded record blocks Phase 8.
 
 ## Local commands
 
-With Trivy 0.72.0 and Docker installed, reproduce the core scans using the exact commands in the
+With Trivy 0.73.0 and Docker installed, reproduce the core scans using the exact commands in the
 workflow:
 
 ```bash
