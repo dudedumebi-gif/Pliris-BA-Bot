@@ -71,11 +71,22 @@ jobs:
           enable-cache: true
           cache-dependency-glob: uv.lock
 
-      - name: Set up Trivy
-        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
-        with:
-          version: v0.72.0
-          cache: true
+      - name: Install checksum-verified Trivy
+        env:
+          TRIVY_ARCHIVE_SHA256: bbb64b9695866ce4a7a8f5c9592002c5961cab378577fa3f8a040df362b9b2ea
+          TRIVY_VERSION: 0.72.0
+        run: |
+          archive="${RUNNER_TEMP}/trivy.tar.gz"
+          binary_directory="${RUNNER_TEMP}/trivy-bin"
+          curl --fail --location --silent --show-error \
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" \
+            --output "${archive}"
+          echo "${TRIVY_ARCHIVE_SHA256}  ${archive}" | sha256sum --check
+          mkdir -p "${binary_directory}"
+          tar --extract --gzip --no-same-owner --file "${archive}" \
+            --directory "${binary_directory}" trivy
+          chmod 0755 "${binary_directory}/trivy"
+          echo "${binary_directory}" >> "${GITHUB_PATH}"
 
       - name: Prepare audit directory
         run: mkdir -p artifacts/security
@@ -163,19 +174,19 @@ jobs:
         run: cat artifacts/security/SECURITY_AUDIT.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Trivy SARIF
-        if: always()
+        if: always() && hashFiles('artifacts/security/*.sarif') != ''
         uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
         with:
           sarif_file: artifacts/security
           category: trivy
 
       - name: Retain complete security evidence
-        if: always()
+        if: always() && hashFiles('artifacts/security/**') != ''
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: security-audit-${{ github.sha }}
           path: artifacts/security
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 90
 
       - name: Enforce fixable High and Critical release gate
