@@ -4,7 +4,7 @@ services:
     runtime: docker
     plan: free
     region: ohio
-    branch: feature-interface-monitoring
+    branch: main
     autoDeployTrigger: commit
     dockerfilePath: ./Dockerfile
     dockerContext: .
