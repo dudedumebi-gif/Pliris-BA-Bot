@@ -1,9 +1,18 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from app import ui_config
 from app.ui_config import UIConfigurationError, UIMode, load_ui_settings
+
+
+def test_docker_compose_passes_developer_key_to_api() -> None:
+    source = Path("docker-compose.yml").read_text(encoding="utf-8")
+    api_service = source.split("\n  streamlit:", maxsplit=1)[0]
+
+    assert "- DEVELOPER_UI_ACCESS_KEY=${DEVELOPER_UI_ACCESS_KEY}" in api_service
 
 
 def test_ui_settings_default_to_public_local_mode() -> None:
