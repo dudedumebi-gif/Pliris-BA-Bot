@@ -17,6 +17,10 @@ The final-image job builds the same `Dockerfile`, labels the image with the comm
 its Streamlit health endpoint, records the immutable image ID, and then scans it. The workflow fails
 when either target has a fixable High or Critical vulnerability.
 
+The final scratch stage materializes the resolved runtime filesystem from the digest-pinned Python
+stage. This preserves the complete Debian/Python runtime while preventing superseded base-layer
+package metadata from being mistaken for installed packages.
+
 ## Evidence and retention
 
 The `security-audit-<commit>` artifact contains the raw reports, both SBOMs, scanner/database

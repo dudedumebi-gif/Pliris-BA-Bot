@@ -1,4 +1,4 @@
-FROM python:3.13-slim@sha256:ffb752e139c0a19692a43af8d8523b274222dd68eebad5d583b45c2201c6e30a
+FROM python:3.13-slim@sha256:ffb752e139c0a19692a43af8d8523b274222dd68eebad5d583b45c2201c6e30a AS python-runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -26,6 +26,20 @@ RUN chmod +x scripts/start_render.sh \
     && useradd --create-home --shell /bin/bash pliris \
     && chown -R pliris:pliris /app
 
+USER pliris
+
+# Materialize the resolved filesystem without inheriting stale base-layer Python inventory.
+FROM scratch
+
+COPY --from=python-runtime / /
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PATH="/app/.venv/bin:${PATH}"
+
+WORKDIR /app
 USER pliris
 
 EXPOSE 10000
