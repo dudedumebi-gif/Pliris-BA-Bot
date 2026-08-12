@@ -10,8 +10,15 @@ WORKDIR /app
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
-    && python -m pip install --no-cache-dir --upgrade \
-        msgpack==1.2.1 setuptools==83.0.0 \
+    && rm -rf \
+        /usr/local/bin/pip \
+        /usr/local/bin/pip3 \
+        /usr/local/bin/pip3.13 \
+        /usr/local/lib/python3.13/ensurepip \
+        /usr/local/lib/python3.13/site-packages/pip \
+        /usr/local/lib/python3.13/site-packages/pip-*.dist-info \
+        /usr/local/lib/python3.13/site-packages/msgpack* \
+        /usr/local/lib/python3.13/site-packages/setuptools* \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.30@sha256:93b61e21202b1dab861092748e46bbd6e0e41dd84f59b9174efd2353186e1b47 /uv /uvx /bin/

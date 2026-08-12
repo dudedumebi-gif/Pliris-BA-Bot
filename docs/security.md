@@ -21,6 +21,10 @@ The final scratch stage materializes the resolved runtime filesystem from the di
 stage. This preserves the complete Debian/Python runtime while preventing superseded base-layer
 package metadata from being mistaken for installed packages.
 
+System `pip`, `ensurepip`, and their bundled packages are removed. The image installs production
+dependencies with the digest-pinned uv binary and `uv sync --frozen`; the removed Python packaging
+tools are not application dependencies or runtime requirements.
+
 ## Evidence and retention
 
 The `security-audit-<commit>` artifact contains the raw reports, both SBOMs, scanner/database
