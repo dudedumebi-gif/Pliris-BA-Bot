@@ -173,12 +173,26 @@ jobs:
       - name: Publish audit in job summary
         run: cat artifacts/security/SECURITY_AUDIT.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload Trivy SARIF
-        if: always() && hashFiles('artifacts/security/*.sarif') != ''
+      - name: Enforce fixable High and Critical release gate
+        run: >-
+          uv run python -m scripts.security_report
+          --filesystem-report artifacts/security/filesystem.json
+          --image-report artifacts/security/image.json
+          --fail-on-fixable-high-critical
+
+      - name: Upload filesystem SARIF
+        if: always() && hashFiles('artifacts/security/filesystem.sarif') != ''
         uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
         with:
-          sarif_file: artifacts/security
-          category: trivy
+          sarif_file: artifacts/security/filesystem.sarif
+          category: trivy-filesystem
+
+      - name: Upload image SARIF
+        if: always() && hashFiles('artifacts/security/image.sarif') != ''
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        with:
+          sarif_file: artifacts/security/image.sarif
+          category: trivy-image
 
       - name: Retain complete security evidence
         if: always() && hashFiles('artifacts/security/**') != ''
@@ -188,10 +202,3 @@ jobs:
           path: artifacts/security
           if-no-files-found: warn
           retention-days: 90
-
-      - name: Enforce fixable High and Critical release gate
-        run: >-
-          uv run python -m scripts.security_report
-          --filesystem-report artifacts/security/filesystem.json
-          --image-report artifacts/security/image.json
-          --fail-on-fixable-high-critical
