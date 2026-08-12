@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "name": "Pliris Phase 6 Finalist Confirmation Contract",
+  "description": "A controlled confirmation of the leading human-scored candidate after prompt hardening, compared with the unchanged production baseline on the original frozen contexts.",
+  "parent_contract_fingerprint": "74c123e1b442a33c3628f0ad5207fc12fe3687847225f8a4962db571761fe271",
+  "source_human_review_fingerprint": "a584db1c9c35aaaa628201c1cfe4e6c81c6308e1fd8252d1d94557db69dec0a0",
+  "source_human_summary_path": "artifacts/llm_evaluation/v1/gpt-5-mini/human_review/summary.json",
+  "source_candidate_id": "decision_ready_v1",
+  "control_variant_id": "production_baseline_v1",
+  "repetitions": 1,
+  "variants": [
+    {
+      "id": "production_baseline_v1",
+      "version": 1,
+      "name": "Production baseline",
+      "hypothesis": "The current Phase 5 grounded instructions provide the strongest overall balance without extra response-planning guidance.",
+      "additional_instructions": "",
+      "is_production_baseline": true
+    },
+    {
+      "id": "decision_ready_hardened_v1",
+      "version": 1,
+      "name": "Decision-ready hardened finalist",
+      "hypothesis": "Decision-ready organization plus explicit atomic-citation serialization and partial-evidence handling will preserve semantic quality while eliminating the observed acceptance failures.",
+      "additional_instructions": "Organize the answer for a Business Analysis or Project Management practitioner. Begin with a direct answer, then use concise labeled sections only when they improve clarity. Present material options, trade-offs, next decisions, and evidence gaps when the supplied context supports them. Avoid repeating the question or restating source text without adding analytical value. When the context supports any material part of the question, answer the supported part and state the specific unresolved evidence gaps; use the global insufficient-evidence fallback only when no substantive part can be answered from the supplied context. Use citations only as separate atomic tokens in the exact form [S1], [S2], and so on. Never combine source identifiers inside one bracket, including forms such as [S1,S2] or [S1, S2]. Before returning the structured response, verify that citation_ids contains exactly the unique inline source identifiers in first-appearance order, with no missing or extra identifiers.",
+      "is_production_baseline": false
+    }
+  ],
+  "selection_policy": {
+    "automated_weighted_score_min": 3.2,
+    "critical_failure_rate_max": 0.05,
+    "response_contract_failure_max": 0,
+    "human_review_required": true,
+    "require_complete_confirmation": true
+  },
+  "outputs": {
+    "root": "artifacts/llm_evaluation/v1/gpt-5-mini/finalist_confirmation",
+    "raw_outputs_jsonl": "raw_outputs.jsonl",
+    "automated_scores_csv": "automated_scores.csv",
+    "automated_summary_json": "summary.json",
+    "automated_summary_md": "summary.md"
+  }
+}

@@ -175,7 +175,19 @@ async def test_grounded_exchange_persists_transactionally() -> None:
         assert retrieval_result["keyword_rank"] == 2
         assert retrieval_result["selected_for_context"] is True
         assert event["event_type"] == ("grounded_response_completed")
-        assert event["properties"]["test_run"] is True
+        properties = event["properties"]
+
+        assert properties["scope_status"] == "in_scope"
+        assert properties["scope_category"] == "business_analysis"
+        assert properties["retrieval_result_count"] == 1
+        assert properties["citation_count"] == 1
+        assert properties["has_provider_response_id"] is True
+
+        # Arbitrary metadata and identifying values must not enter monitoring storage.
+        assert "test_run" not in properties
+        assert "user_id" not in properties
+        assert "response_id" not in properties
+        assert "cited_chunk_ids" not in properties
 
     finally:
         if outcome is not None:

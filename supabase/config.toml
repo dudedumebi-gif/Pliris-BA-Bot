@@ -1,17 +1,20 @@
-[project]
-name = "pliris-ba-bot"
-version = "0.1.0"
-
-[database]
-url = "postgresql://postgres:password@localhost:5432/pliris"
-port = 5432
-
-[storage]
-buckets = ["documents", "exports"]
-
-[auth]
-enabled = true
+project_id = "pliris-ba-bot"
 
 [api]
 enabled = true
-port = 8000
+port = 54321
+
+[db]
+port = 54322
+
+[storage]
+enabled = true
+file_size_limit = "32MiB"
+
+[storage.buckets.knowledge-base]
+public = false
+file_size_limit = "32MiB"
+allowed_mime_types = ["application/pdf"]
+
+[auth]
+enabled = true

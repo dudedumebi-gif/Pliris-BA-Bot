@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 from dataclasses import asdict
+from uuid import UUID
 
 from ingestion.pipeline import IngestionPipeline
 from pliris.database.postgres import close_postgres_pool
@@ -17,6 +18,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--document-id",
         required=True,
         help="Stable document_id from data/corpus_manifest.yaml.",
+    )
+    parser.add_argument(
+        "--staged-document-id",
+        type=UUID,
+        default=None,
+        help="Exact database UUID of an already-staged pending document.",
     )
     parser.add_argument(
         "--dry-run",
@@ -45,12 +52,16 @@ def main() -> int:
     if args.max_pages is not None and not args.dry_run:
         parser.error("--max-pages may be used only with --dry-run.")
 
+    if args.staged_document_id is not None and args.force:
+        parser.error("--force may not be used with --staged-document-id.")
+
     try:
         summary = IngestionPipeline().ingest(
             args.document_id,
             dry_run=args.dry_run,
             max_pages=args.max_pages,
             force=args.force,
+            staged_document_id=args.staged_document_id,
             embedding_batch_size=args.embedding_batch_size,
         )
         print(json.dumps(asdict(summary), indent=2))

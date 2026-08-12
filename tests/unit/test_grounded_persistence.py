@@ -214,7 +214,13 @@ async def test_persist_exchange_writes_atomic_record_set() -> None:
     properties = monitoring_call[2]
     assert properties["scope_confidence"] == 1.0
     assert properties["scope_confidence_basis"] == ("validated_discrete_scope_decision")
-    assert properties["cited_chunk_ids"] == [CHUNK_ID]
+    assert properties["retrieved_count"] == 1
+    assert properties["citation_count"] == 1
+    assert properties["model_name"] == "gpt-5-mini-2025-08-07"
+    assert properties["has_provider_response_id"] is True
+    assert "user_id" not in properties
+    assert "response_id" not in properties
+    assert "cited_chunk_ids" not in properties
 
 
 @pytest.mark.asyncio

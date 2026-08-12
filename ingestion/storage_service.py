@@ -36,5 +36,26 @@ class KnowledgeBaseStorage:
         )
         return storage_path
 
+    def upload_pdf_bytes(
+        self,
+        payload: bytes,
+        *,
+        document_id: str,
+        filename: str,
+    ) -> str:
+        """Upload validated PDF bytes without overwriting an existing object."""
+
+        storage_path = self.build_storage_path(document_id, filename)
+
+        self.client.storage.from_(self.bucket).upload(
+            path=storage_path,
+            file=payload,
+            file_options={
+                "content-type": "application/pdf",
+                "upsert": "false",
+            },
+        )
+        return storage_path
+
     def remove(self, storage_path: str) -> None:
         self.client.storage.from_(self.bucket).remove([storage_path])

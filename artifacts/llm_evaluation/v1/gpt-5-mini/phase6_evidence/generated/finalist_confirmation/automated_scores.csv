@@ -1,0 +1,25 @@
+attempt_id,case_id,variant_id,status,api_called,weighted_score,passed,critical_failures,latency_ms,input_tokens,output_tokens,estimated_cost_usd,error_type,error_message
+comparison_traceability_maintenance::decision_ready_hardened_v1::confirmation-r1,comparison_traceability_maintenance,decision_ready_hardened_v1,error,True,,,,13297.469,3805,2400,0.00575125,GroundedResponseValidationError,Declared citation identifiers must match the citations used in the answer.
+comparison_traceability_maintenance::production_baseline_v1::confirmation-r1,comparison_traceability_maintenance,production_baseline_v1,success,True,3.7037,True,,11497.733,3657,1187,0.00328825,,
+comparison_validation_verification::decision_ready_hardened_v1::confirmation-r1,comparison_validation_verification,decision_ready_hardened_v1,error,True,,,,9315.844,3878,2400,0.0057695,GroundedResponseValidationError,Declared citation identifiers must match the citations used in the answer.
+comparison_validation_verification::production_baseline_v1::confirmation-r1,comparison_validation_verification,production_baseline_v1,success,True,3.7647,True,,10313.447,3730,920,0.0027725,,
+conflict_approval_scope::decision_ready_hardened_v1::confirmation-r1,conflict_approval_scope,decision_ready_hardened_v1,success,True,3.4333,True,,7990.101,748,648,0.001483,,
+conflict_approval_scope::production_baseline_v1::confirmation-r1,conflict_approval_scope,production_baseline_v1,success,True,3.7778,True,,7891.696,562,591,0.0013225,,
+conflict_baseline_retention::decision_ready_hardened_v1::confirmation-r1,conflict_baseline_retention,decision_ready_hardened_v1,success,True,4.0,True,,10273.761,755,947,0.00208275,,
+conflict_baseline_retention::production_baseline_v1::confirmation-r1,conflict_baseline_retention,production_baseline_v1,success,True,3.6667,True,,8319.197,569,767,0.00167625,,
+grounded_partial_evidence::decision_ready_hardened_v1::confirmation-r1,grounded_partial_evidence,decision_ready_hardened_v1,success,True,3.8889,True,,6499.217,499,507,0.00113875,,
+grounded_partial_evidence::production_baseline_v1::confirmation-r1,grounded_partial_evidence,production_baseline_v1,success,True,1.5,False,unexpected_insufficient_evidence_response|minimum_citations_not_met,2643.787,313,181,0.00044025,,
+grounded_prioritization_factors::decision_ready_hardened_v1::confirmation-r1,grounded_prioritization_factors,decision_ready_hardened_v1,success,True,3.8276,True,,11782.597,3737,1052,0.00303825,,
+grounded_prioritization_factors::production_baseline_v1::confirmation-r1,grounded_prioritization_factors,production_baseline_v1,success,True,4.0,True,,7167.36,3551,669,0.00222575,,
+grounded_traceability_definition::decision_ready_hardened_v1::confirmation-r1,grounded_traceability_definition,decision_ready_hardened_v1,success,True,3.7826,True,,10670.978,3743,866,0.00266775,,
+grounded_traceability_definition::production_baseline_v1::confirmation-r1,grounded_traceability_definition,production_baseline_v1,success,True,4.0,True,,6759.951,3557,410,0.00170925,,
+insufficient_vendor_threshold::decision_ready_hardened_v1::confirmation-r1,insufficient_vendor_threshold,decision_ready_hardened_v1,success,False,4.0,True,,0.072,0,0,0.0,,
+insufficient_vendor_threshold::production_baseline_v1::confirmation-r1,insufficient_vendor_threshold,production_baseline_v1,success,False,4.0,True,,0.055,0,0,0.0,,
+outline_stakeholder_analysis::decision_ready_hardened_v1::confirmation-r1,outline_stakeholder_analysis,decision_ready_hardened_v1,success,True,3.55,True,,14037.557,4136,1536,0.004106,,
+outline_stakeholder_analysis::production_baseline_v1::confirmation-r1,outline_stakeholder_analysis,production_baseline_v1,success,True,3.3283,True,,18581.052,3950,1841,0.0046695,,
+outline_traceability_matrix::decision_ready_hardened_v1::confirmation-r1,outline_traceability_matrix,decision_ready_hardened_v1,success,True,3.5903,True,,19280.775,3943,2057,0.00509975,,
+outline_traceability_matrix::production_baseline_v1::confirmation-r1,outline_traceability_matrix,production_baseline_v1,success,True,3.4035,True,,18089.555,3757,1909,0.00475725,,
+scenario_approved_requirement_change::decision_ready_hardened_v1::confirmation-r1,scenario_approved_requirement_change,decision_ready_hardened_v1,success,True,3.4833,True,,13952.853,3909,1427,0.00383125,,
+scenario_approved_requirement_change::production_baseline_v1::confirmation-r1,scenario_approved_requirement_change,production_baseline_v1,success,True,3.775,True,,14110.506,3723,1283,0.00349675,,
+scenario_stakeholder_unavailable::decision_ready_hardened_v1::confirmation-r1,scenario_stakeholder_unavailable,decision_ready_hardened_v1,success,True,3.5857,True,,18184.286,3731,1515,0.00396275,,
+scenario_stakeholder_unavailable::production_baseline_v1::confirmation-r1,scenario_stakeholder_unavailable,production_baseline_v1,error,True,,,,11149.335,3507,2400,0.00567675,GroundedResponseValidationError,Declared citation identifiers must match the citations used in the answer.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -38,4 +39,5 @@ class ChatResponse(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0)
     scope: str
     conversation_id: str | None = None
+    assistant_message_id: UUID | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)

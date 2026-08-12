@@ -1,0 +1,26 @@
+{
+  "accepted_response_count": 30,
+  "attempt_count": 36,
+  "contract_failure_count": 6,
+  "contract_fingerprint": "74c123e1b442a33c3628f0ad5207fc12fe3687847225f8a4962db571761fe271",
+  "dimension_ids": [
+    "groundedness",
+    "citation_quality",
+    "mode_fulfillment",
+    "completeness",
+    "relevance_clarity",
+    "uncertainty_handling"
+  ],
+  "response_labels": [
+    "Answer A",
+    "Answer B",
+    "Answer C"
+  ],
+  "review_set_fingerprint": "a584db1c9c35aaaa628201c1cfe4e6c81c6308e1fd8252d1d94557db69dec0a0",
+  "score_scale": {
+    "maximum": 4,
+    "minimum": 0
+  },
+  "selection_status": "not_performed_phase_6_step_3",
+  "version": 1
+}

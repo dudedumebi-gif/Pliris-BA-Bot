@@ -1,0 +1,476 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from string import hexdigits
+from typing import Any
+from uuid import UUID
+
+import httpx
+
+from app.ui_config import UISettings
+
+DEVELOPER_KEY_HEADER = "X-Pliris-Developer-Key"
+_FORBIDDEN_RESPONSE_FIELDS = {
+    "storage_bucket",
+    "storage_path",
+    "ingestion_error",
+    "openai_api_key",
+    "supabase_secret_key",
+    "supabase_db_url",
+    "embedding",
+}
+
+
+class SourceServiceError(RuntimeError):
+    """Safe developer-UI failure raised by the source API client."""
+
+    def __init__(
+        self,
+        *,
+        code: str,
+        user_message: str,
+        status_code: int | None = None,
+    ) -> None:
+        super().__init__(user_message)
+        self.code = code
+        self.user_message = user_message
+        self.status_code = status_code
+
+
+@dataclass(frozen=True)
+class SourceListPage:
+    items: list[dict[str, Any]]
+    total: int
+    limit: int
+    offset: int
+
+
+@dataclass(frozen=True)
+class SourceChunkPage:
+    document_id: str
+    items: list[dict[str, Any]]
+    total: int
+    limit: int
+    offset: int
+
+
+@dataclass(frozen=True)
+class SourceEventPage:
+    document_id: str
+    items: list[dict[str, Any]]
+    total: int
+    limit: int
+    offset: int
+
+
+class SourceClient:
+    """Server-to-server client for protected source inspection."""
+
+    def __init__(
+        self,
+        settings: UISettings,
+        *,
+        transport: httpx.BaseTransport | None = None,
+    ) -> None:
+        self._settings = settings
+        self._transport = transport
+
+    def list_sources(
+        self,
+        *,
+        query: str | None = None,
+        status: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> SourceListPage:
+        params: dict[str, str | int] = {"limit": limit, "offset": offset}
+        if query:
+            params["query"] = query
+        if status:
+            params["status"] = status
+
+        payload = self._get("/api/sources/", params=params)
+        items = payload.get("items")
+        total = payload.get("total")
+        returned_limit = payload.get("limit")
+        returned_offset = payload.get("offset")
+
+        if (
+            not isinstance(items, list)
+            or not isinstance(total, int)
+            or not isinstance(returned_limit, int)
+            or not isinstance(returned_offset, int)
+            or any(not isinstance(item, dict) for item in items)
+        ):
+            raise _invalid_payload_error()
+
+        return SourceListPage(
+            items=items,
+            total=total,
+            limit=returned_limit,
+            offset=returned_offset,
+        )
+
+    def get_stats(self) -> dict[str, Any]:
+        return self._get("/api/sources/stats")
+
+    def get_source(self, source_id: str) -> dict[str, Any]:
+        return self._get(f"/api/sources/{source_id}")
+
+    def stage_pdf(
+        self,
+        *,
+        manifest_id: str,
+        filename: str,
+        payload: bytes,
+    ) -> dict[str, Any]:
+        response = self._request(
+            "POST",
+            "/api/sources/stage",
+            form_data={"manifest_id": manifest_id},
+            files={
+                "upload": (
+                    filename,
+                    payload,
+                    "application/pdf",
+                )
+            },
+            expected_status=201,
+            staging_request=True,
+        )
+
+        database_document_id = response.get("database_document_id")
+        returned_manifest_id = response.get("manifest_id")
+        safe_filename = response.get("safe_filename")
+        checksum = response.get("checksum_sha256")
+        size_bytes = response.get("size_bytes")
+
+        if (
+            not isinstance(database_document_id, str)
+            or returned_manifest_id != manifest_id
+            or safe_filename != filename
+            or not isinstance(checksum, str)
+            or len(checksum) != 64
+            or any(character not in hexdigits for character in checksum)
+            or size_bytes != len(payload)
+            or response.get("status") != "pending"
+        ):
+            raise _invalid_payload_error()
+
+        try:
+            UUID(database_document_id)
+        except (TypeError, ValueError) as exc:
+            raise _invalid_payload_error() from exc
+
+        return response
+
+    def get_chunks(
+        self,
+        source_id: str,
+        *,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> SourceChunkPage:
+        payload = self._get(
+            f"/api/sources/{source_id}/chunks",
+            params={"limit": limit, "offset": offset},
+        )
+        document_id = payload.get("document_id")
+        items = payload.get("items")
+        total = payload.get("total")
+        returned_limit = payload.get("limit")
+        returned_offset = payload.get("offset")
+
+        if (
+            not isinstance(document_id, str)
+            or not isinstance(items, list)
+            or not isinstance(total, int)
+            or not isinstance(returned_limit, int)
+            or not isinstance(returned_offset, int)
+            or any(not isinstance(item, dict) for item in items)
+        ):
+            raise _invalid_payload_error()
+
+        return SourceChunkPage(
+            document_id=document_id,
+            items=items,
+            total=total,
+            limit=returned_limit,
+            offset=returned_offset,
+        )
+
+    def get_events(
+        self,
+        source_id: str,
+        *,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> SourceEventPage:
+        payload = self._get(
+            f"/api/sources/{source_id}/events",
+            params={"limit": limit, "offset": offset},
+        )
+        document_id = payload.get("document_id")
+        items = payload.get("items")
+        total = payload.get("total")
+        returned_limit = payload.get("limit")
+        returned_offset = payload.get("offset")
+
+        if (
+            not isinstance(document_id, str)
+            or not isinstance(items, list)
+            or not isinstance(total, int)
+            or not isinstance(returned_limit, int)
+            or not isinstance(returned_offset, int)
+            or any(not isinstance(item, dict) for item in items)
+        ):
+            raise _invalid_payload_error()
+        for item in items:
+            _validate_lifecycle_event(item)
+
+        return SourceEventPage(
+            document_id=document_id,
+            items=items,
+            total=total,
+            limit=returned_limit,
+            offset=returned_offset,
+        )
+
+    def archive_source(
+        self,
+        source_id: str,
+        *,
+        reason: str,
+        confirmation: str,
+    ) -> dict[str, Any]:
+        return self._apply_lifecycle_action(
+            source_id,
+            action="archive",
+            reason=reason,
+            confirmation=confirmation,
+        )
+
+    def restore_source(
+        self,
+        source_id: str,
+        *,
+        reason: str,
+        confirmation: str,
+    ) -> dict[str, Any]:
+        return self._apply_lifecycle_action(
+            source_id,
+            action="restore",
+            reason=reason,
+            confirmation=confirmation,
+        )
+
+    def _apply_lifecycle_action(
+        self,
+        source_id: str,
+        *,
+        action: str,
+        reason: str,
+        confirmation: str,
+    ) -> dict[str, Any]:
+        payload = self._request(
+            "POST",
+            f"/api/sources/{source_id}/{action}",
+            json_body={
+                "reason": reason,
+                "confirmation": confirmation,
+            },
+        )
+        _validate_lifecycle_event(payload)
+        return payload
+
+    def _get(
+        self,
+        path: str,
+        *,
+        params: dict[str, str | int] | None = None,
+    ) -> dict[str, Any]:
+        return self._request("GET", path, params=params)
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, str | int] | None = None,
+        json_body: dict[str, str] | None = None,
+        form_data: dict[str, str] | None = None,
+        files: dict[str, tuple[str, bytes, str]] | None = None,
+        expected_status: int = 200,
+        staging_request: bool = False,
+    ) -> dict[str, Any]:
+        key = self._settings.developer_ui_access_key
+        if key is None or not key.strip():
+            raise SourceServiceError(
+                code="not_configured",
+                user_message=(
+                    "The developer source workspace is not configured. "
+                    "Set the developer access key and restart the interface."
+                ),
+            )
+
+        headers = {
+            DEVELOPER_KEY_HEADER: key,
+            "Accept": "application/json",
+            "User-Agent": "pliris-developer-ui/0.1",
+        }
+
+        try:
+            with httpx.Client(
+                timeout=self._settings.api_timeout_seconds,
+                transport=self._transport,
+            ) as client:
+                response = client.request(
+                    method,
+                    f"{self._settings.api_url}{path}",
+                    headers=headers,
+                    params=params,
+                    json=json_body,
+                    data=form_data,
+                    files=files,
+                )
+        except httpx.TimeoutException as exc:
+            raise SourceServiceError(
+                code="timeout",
+                user_message=(
+                    "Source inspection is taking longer than expected. Please retry shortly."
+                ),
+            ) from exc
+        except httpx.RequestError as exc:
+            raise SourceServiceError(
+                code="unavailable",
+                user_message=("The source-inspection service is temporarily unavailable."),
+            ) from exc
+
+        if response.status_code != expected_status:
+            if staging_request:
+                raise _staging_service_error_from_response(response)
+            raise _service_error_from_response(response)
+
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise _invalid_payload_error() from exc
+
+        if not isinstance(payload, dict):
+            raise _invalid_payload_error()
+
+        _assert_safe_payload(payload)
+        return payload
+
+
+def _validate_lifecycle_event(payload: dict[str, Any]) -> None:
+    required_text = {
+        "id",
+        "document_id",
+        "actor",
+        "reason",
+        "created_at",
+    }
+    if (
+        any(not isinstance(payload.get(field), str) for field in required_text)
+        or payload.get("action") not in {"archive", "restore"}
+        or payload.get("previous_status") not in {"ready", "archived"}
+        or payload.get("new_status") not in {"ready", "archived"}
+        or not isinstance(payload.get("metadata"), dict)
+    ):
+        raise _invalid_payload_error()
+
+
+def _assert_safe_payload(value: Any) -> None:
+    if isinstance(value, dict):
+        if _FORBIDDEN_RESPONSE_FIELDS.intersection(value):
+            raise _invalid_payload_error()
+        for item in value.values():
+            _assert_safe_payload(item)
+    elif isinstance(value, list):
+        for item in value:
+            _assert_safe_payload(item)
+
+
+def _staging_service_error_from_response(
+    response: httpx.Response,
+) -> SourceServiceError:
+    status_code = response.status_code
+
+    if status_code == 403:
+        return SourceServiceError(
+            code="staging_protected",
+            user_message="This manifest source is protected from PDF staging.",
+            status_code=status_code,
+        )
+    if status_code == 404:
+        return SourceServiceError(
+            code="manifest_not_found",
+            user_message="The selected manifest source could not be found.",
+            status_code=status_code,
+        )
+    if status_code == 409:
+        return SourceServiceError(
+            code="staging_conflict",
+            user_message=(
+                "This PDF or manifest source is already registered. No new source was staged."
+            ),
+            status_code=status_code,
+        )
+    if status_code == 422:
+        return SourceServiceError(
+            code="validation",
+            user_message=(
+                "The PDF could not be staged. Confirm the filename, file type, "
+                "content, and permitted size."
+            ),
+            status_code=status_code,
+        )
+
+    return _service_error_from_response(response)
+
+
+def _service_error_from_response(
+    response: httpx.Response,
+) -> SourceServiceError:
+    status_code = response.status_code
+    if status_code in {401, 403}:
+        code = "not_authorized"
+        message = "The source workspace could not authenticate with the developer API."
+    elif status_code == 404:
+        code = "not_found"
+        message = "That knowledge-base source could not be found."
+    elif status_code == 400:
+        code = "confirmation_mismatch"
+        message = "The manifest-ID confirmation did not match the selected source."
+    elif status_code == 409:
+        code = "lifecycle_conflict"
+        message = (
+            "The lifecycle action conflicts with the source's current state or index readiness."
+        )
+    elif status_code == 422:
+        code = "validation"
+        message = "The source request was not valid. Check the supplied values and try again."
+    elif status_code in {502, 503, 504}:
+        code = "unavailable"
+        message = "The source-inspection service is temporarily unavailable."
+    elif status_code >= 500:
+        code = "server_error"
+        message = "The source-inspection service encountered a temporary problem."
+    else:
+        code = "request_failed"
+        message = "The source-inspection request could not be completed."
+
+    return SourceServiceError(
+        code=code,
+        user_message=message,
+        status_code=status_code,
+    )
+
+
+def _invalid_payload_error() -> SourceServiceError:
+    return SourceServiceError(
+        code="invalid_response",
+        user_message=("The source-inspection service returned an incomplete response."),
+        status_code=200,
+    )

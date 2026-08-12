@@ -76,6 +76,11 @@ def test_validator_maps_valid_inline_citations() -> None:
     ]
     assert answer.usage.total_tokens == 140
     assert answer.metadata["available_source_count"] == 2
+    assert answer.metadata["declared_citation_ids"] == (
+        "S1",
+        "S2",
+    )
+    assert answer.metadata["citation_ids_normalized"] is False
 
 
 def test_validator_rejects_unknown_citation() -> None:
@@ -92,18 +97,18 @@ def test_validator_rejects_unknown_citation() -> None:
         )
 
 
-def test_validator_rejects_declared_inline_mismatch() -> None:
-    with pytest.raises(
-        GroundedResponseValidationError,
-        match="must match the citations used in the answer",
-    ):
-        validate(
-            GroundedDraft(
-                answer="Supported claim [S1].",
-                citation_ids=("S2",),
-                insufficient_evidence=False,
-            )
+def test_validator_normalizes_declared_inline_mismatch() -> None:
+    answer = validate(
+        GroundedDraft(
+            answer="Supported claim [S1].",
+            citation_ids=("S2",),
+            insufficient_evidence=False,
         )
+    )
+
+    assert answer.citation_ids == ("S1",)
+    assert answer.metadata["declared_citation_ids"] == ("S2",)
+    assert answer.metadata["citation_ids_normalized"] is True
 
 
 def test_validator_rejects_malformed_citation_token() -> None:

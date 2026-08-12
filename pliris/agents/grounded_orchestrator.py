@@ -117,18 +117,26 @@ class GroundedResponseOrchestrator:
         scope_confidence: float | None = None,
         scope_category: str | None = None,
         request_mode: str = "grounded_question",
+        retrieval_query: str | None = None,
+        generation_question: str | None = None,
     ) -> GroundedPipelineResult:
         normalized_message = message.strip()
         if not normalized_message:
             raise ValueError("message must not be blank.")
 
         normalized_request_mode = request_mode.strip() or "grounded_question"
+        normalized_retrieval_query = (retrieval_query or normalized_message).strip()
+        normalized_generation_question = (generation_question or normalized_message).strip()
+        if not normalized_retrieval_query:
+            raise ValueError("retrieval_query must not be blank.")
+        if not normalized_generation_question:
+            raise ValueError("generation_question must not be blank.")
 
         total_started = perf_counter()
 
         retrieval_started = perf_counter()
         chunks = await self.retriever.search(
-            normalized_message,
+            normalized_retrieval_query,
             top_k=self.top_k,
             document_id=document_id,
         )
@@ -140,7 +148,7 @@ class GroundedResponseOrchestrator:
 
         generation_started = perf_counter()
         answer = await self.generator.generate(
-            question=normalized_message,
+            question=normalized_generation_question,
             context=context,
             request_mode=normalized_request_mode,
         )
@@ -158,6 +166,10 @@ class GroundedResponseOrchestrator:
             "user_id": user_id,
             "document_id": document_id,
             "request_mode": normalized_request_mode,
+            "query_resolution": {
+                "context_used": bool(retrieval_query or generation_question),
+                "retrieval_query": normalized_retrieval_query,
+            },
             "retrieved_count": len(chunks),
             "context_source_count": len(context.sources),
             "context_character_count": context.character_count,

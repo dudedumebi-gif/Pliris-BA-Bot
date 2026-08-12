@@ -1,0 +1,288 @@
+{
+  "budget": {
+    "estimated_cost_usd": 0.17483089,
+    "generation_api_calls": 55
+  },
+  "counts": {
+    "finalist_automated_scores": 24,
+    "finalist_contract_failures": 3,
+    "finalist_human_scores": 24,
+    "finalist_raw_outputs": 24,
+    "frozen_contexts": 12,
+    "primary_automated_scores": 36,
+    "primary_contract_failures": 6,
+    "primary_human_scores": 36,
+    "primary_raw_outputs": 36
+  },
+  "decision": {
+    "decision_status": "no_finalist_selected",
+    "human_review_cannot_override_automated_gate": true,
+    "production_prompt_changed": false,
+    "retained_production_prompt": "production_baseline_v1",
+    "selected_variant_id": null
+  },
+  "files": [
+    {
+      "path": "commands.md",
+      "sha256": "e94f909fcf8ea00b4aa455d078cea8ce6b0a0d5d38dbf0ab93a5a11092de45fa",
+      "size_bytes": 1512
+    },
+    {
+      "path": "contracts/llm_evaluation_config.json",
+      "sha256": "a7b5758ac90aa33e3c2a96847a27bb355e6908c6ab54f7079976ae85f10769e3",
+      "size_bytes": 2441
+    },
+    {
+      "path": "contracts/llm_finalist_confirmation.json",
+      "sha256": "59690409c37af063bc5ad255fe83adc3ce66c7537a144e402736fa7226425c64",
+      "size_bytes": 2948
+    },
+    {
+      "path": "contracts/llm_generation_benchmark.json",
+      "sha256": "c2b0f73ec97ff55c2ca8910de7751f436c94245fcfa82c956fa7e047b01fbb6a",
+      "size_bytes": 17816
+    },
+    {
+      "path": "contracts/llm_prompt_variants.json",
+      "sha256": "aeedf55fea602c532a57c38d025bedd3e570fad722c34a823beedc208a962828",
+      "size_bytes": 2009
+    },
+    {
+      "path": "generated/finalist_confirmation/automated_scores.csv",
+      "sha256": "41ff505293c3a5624e7a27d36fbd72d66962b3d8f860fd3449ec11f0f27e6a93",
+      "size_bytes": 4988
+    },
+    {
+      "path": "generated/finalist_confirmation/human_review/blinded_responses.csv",
+      "sha256": "98a88e84fad7d32e409eec4e62b33b6f7c1444fd8f87097b492f4278707cc453",
+      "size_bytes": 387184
+    },
+    {
+      "path": "generated/finalist_confirmation/human_review/blinding_key.json",
+      "sha256": "29b9e1700b216c5e1c9662ba74beaccf305009cae429ef32e916e42eb580df0e",
+      "size_bytes": 8703
+    },
+    {
+      "path": "generated/finalist_confirmation/human_review/decision_record.json",
+      "sha256": "b2f2170ea1e163bb0fec02ec7aa3e41d267212fdb76a5ab5590c29f3d5112ab3",
+      "size_bytes": 1805
+    },
+    {
+      "path": "generated/finalist_confirmation/human_review/decision_record.md",
+      "sha256": "8412470302285794c1d28f23afc7f8cc14b18457d874a3358abd35e60e883298",
+      "size_bytes": 369
+    },
+    {
+      "path": "generated/finalist_confirmation/human_review/review_instructions.md",
+      "sha256": "f819fe2688fb6198f02a81aa9e60dd42dcd837cfc41fe6aa1630282a356b363a",
+      "size_bytes": 865
+    },
+    {
+      "path": "generated/finalist_confirmation/human_review/review_manifest.json",
+      "sha256": "3bb8b3e76718dd95224a04d4cae0a132459c0c402409f490f20ab628bc7675c2",
+      "size_bytes": 602
+    },
+    {
+      "path": "generated/finalist_confirmation/human_review/scores.csv",
+      "sha256": "de0db29dbda18d52ccfb1280c9d6031c6f13e3feab67a1295bca3a6db4d6214b",
+      "size_bytes": 8370
+    },
+    {
+      "path": "generated/finalist_confirmation/human_review/summary.json",
+      "sha256": "0cf560e0d06a87b67cb80f6eb5b508239b8ee0c6830aaa8ec7e45c334a39426f",
+      "size_bytes": 1683
+    },
+    {
+      "path": "generated/finalist_confirmation/human_review/summary.md",
+      "sha256": "a1fed2941be0c71fe700ad2b7d160e4d87fba34103247d8bc065f76547098cc8",
+      "size_bytes": 409
+    },
+    {
+      "path": "generated/finalist_confirmation/raw_outputs.jsonl",
+      "sha256": "fa7d261219188ff7bbe6222ba06e1714b9552560dcbfaf49241a93bca7fff069",
+      "size_bytes": 196665
+    },
+    {
+      "path": "generated/finalist_confirmation/summary.json",
+      "sha256": "5bb2f229e89943d7b29f7c1580f03959ef3258bc8c8dc80171286a9807c0803e",
+      "size_bytes": 1570
+    },
+    {
+      "path": "generated/finalist_confirmation/summary.md",
+      "sha256": "b7494a7d8c7ada0273a89c55dcc02693e0a79d71e88d7fa5788ae79f69d5e6ab",
+      "size_bytes": 681
+    },
+    {
+      "path": "generated/frozen_contexts.jsonl",
+      "sha256": "1c91aaf85ec784331076d625090fab24d1bca073c7773a6cd7a2cc837fa62bff",
+      "size_bytes": 343659
+    },
+    {
+      "path": "generated/human_review/blinded_responses.csv",
+      "sha256": "4389c54345036e43ede763d2c99bb43c5e373ea8a766648722e00868940041c7",
+      "size_bytes": 561265
+    },
+    {
+      "path": "generated/human_review/blinding_key.json",
+      "sha256": "f10f9f8f07b6381f7291461659614f0e40b52fb743b786b4d1e85417d1dd9fcf",
+      "size_bytes": 12660
+    },
+    {
+      "path": "generated/human_review/review_instructions.md",
+      "sha256": "aa4f7b7439848dba70a82c0accb2e3cc5a4a651b2fa828b1b59dc040d8cbc9a8",
+      "size_bytes": 1743
+    },
+    {
+      "path": "generated/human_review/review_manifest.json",
+      "sha256": "2fd7a072739a92f90eed086a02e44b27a9b10c55265e1e258a158bd489f3d598",
+      "size_bytes": 676
+    },
+    {
+      "path": "generated/human_review/scores.csv",
+      "sha256": "625180a083e7c2aeba8cd22f07a49b2089306dd977c9f11e14ec30f44bb189cd",
+      "size_bytes": 11185
+    },
+    {
+      "path": "generated/human_review/summary.json",
+      "sha256": "3d9f30edf1a7502e8b6ece7e415514eb2ef6a62e276dcb7a5344e80d064c07fc",
+      "size_bytes": 2207
+    },
+    {
+      "path": "generated/human_review/summary.md",
+      "sha256": "d9df4736d5e45c84698623be419239753cafab3964b4c1d00e3808c33f715a59",
+      "size_bytes": 724
+    },
+    {
+      "path": "generated/primary/automated_scores.csv",
+      "sha256": "aa2d9e65dd6ba776a1b4f169c890c842f7f28c75320eea39056077586bb17aec",
+      "size_bytes": 8323
+    },
+    {
+      "path": "generated/primary/raw_outputs.jsonl",
+      "sha256": "5f89ae348743d8765b2a57a9d0d9dc6bb54c66d9f6474eb22aaf8616b9ed5f02",
+      "size_bytes": 253568
+    },
+    {
+      "path": "generated/primary/summary.json",
+      "sha256": "cb842696c97edef8bdbcccaa50990c3d501b8d7f3a85602d8afd3495f590786b",
+      "size_bytes": 2481
+    },
+    {
+      "path": "generated/primary/summary.md",
+      "sha256": "b36d041d7e48e4ba7cc67cd5fc7486f472aeb13c8443ca44c22c74b4c92d9d07",
+      "size_bytes": 658
+    },
+    {
+      "path": "README.md",
+      "sha256": "c3c9d9239f741048f10b956a001bd1dec07e6f1e1bfdceaddd1184bdaa30c6b0",
+      "size_bytes": 1317
+    },
+    {
+      "path": "reproducibility/evaluation/llm_contexts.py",
+      "sha256": "f7a5236f4efcd0885d009dc7b6768750a561f250e55098fd925294327e4f777e",
+      "size_bytes": 14859
+    },
+    {
+      "path": "reproducibility/evaluation/llm_contract.py",
+      "sha256": "592d740c523c275d9d52c3bc517ed299cce9ea6ed0bde62877f79beb8896989f",
+      "size_bytes": 14403
+    },
+    {
+      "path": "reproducibility/evaluation/llm_finalist_contract.py",
+      "sha256": "3a14530b6695981dda032dc9b6fa58745c868d1fd5fb2a501432a4f40325c5a8",
+      "size_bytes": 6029
+    },
+    {
+      "path": "reproducibility/evaluation/llm_finalist_human_review.py",
+      "sha256": "a009abaddaf7571a58a19ebf855a2addcdb41a1324902489342ab30f664a9a8b",
+      "size_bytes": 27411
+    },
+    {
+      "path": "reproducibility/evaluation/llm_finalist_runner.py",
+      "sha256": "fb0986fa1a5b1935cf8ed81a882c0e5818f0315e48b80610c96639f68319eee6",
+      "size_bytes": 25999
+    },
+    {
+      "path": "reproducibility/evaluation/llm_human_review.py",
+      "sha256": "6de4f0eb44c8d4864e1d324772d2c2b20ba85a730e57708dc9ef1aa531ec708a",
+      "size_bytes": 30824
+    },
+    {
+      "path": "reproducibility/evaluation/llm_runner.py",
+      "sha256": "d2224576b53cd47e32cc865458dcc8dac6aa775f7778f14d4f998e1e67638785",
+      "size_bytes": 27276
+    },
+    {
+      "path": "reproducibility/evaluation/llm_scoring.py",
+      "sha256": "c4013f198f2852e1129807982cfd0091859a55b082ef77dd919f9c5bc53da7ce",
+      "size_bytes": 10399
+    },
+    {
+      "path": "reproducibility/evaluation/llm_variant_generator.py",
+      "sha256": "e21301a07d32025cd30e696e476776381d6e1c058d8e57ed9b72742460811705",
+      "size_bytes": 5429
+    },
+    {
+      "path": "reproducibility/README_PHASE_6_STEP_1.md",
+      "sha256": "7e43fdff238d5b1a54effbac001cdb49995b4f5de9677572a8d36c704b1d65bf",
+      "size_bytes": 5919
+    },
+    {
+      "path": "reproducibility/README_PHASE_6_STEP_2.md",
+      "sha256": "f541a8cd27a98f9711f636f5f15e17af74c9fa044d8cf7e9e2be74e0b85c10e4",
+      "size_bytes": 7434
+    },
+    {
+      "path": "reproducibility/README_PHASE_6_STEP_3.md",
+      "sha256": "db017cfd31f7ddcb8716cf466bdd92878c6384811c0ecb8a2cf5d55da7a322c7",
+      "size_bytes": 2609
+    },
+    {
+      "path": "reproducibility/README_PHASE_6_STEP_4A.md",
+      "sha256": "90834c51a789dd1bd86868fdf5328f1f98c408279210104a607a080c4b1f2cc1",
+      "size_bytes": 3605
+    },
+    {
+      "path": "reproducibility/README_PHASE_6_STEP_4B.md",
+      "sha256": "83af0821e030043acc7d51be44a6653d3fcbbf6452a9d4d4f6d797ed95f6e635",
+      "size_bytes": 1847
+    },
+    {
+      "path": "reproducibility/scripts/confirm_llm_finalists.py",
+      "sha256": "4f2670ed87edf48e23d3cdac38c3605f753e8bc526121c4eff5223d064b9d9f4",
+      "size_bytes": 4569
+    },
+    {
+      "path": "reproducibility/scripts/evaluate_llm_prompts.py",
+      "sha256": "02a034634d556ff4f062d6d35bdded3f39a7d157671758706ed9464495a78f9e",
+      "size_bytes": 7240
+    },
+    {
+      "path": "reproducibility/scripts/review_llm_finalists.py",
+      "sha256": "e251512a172d38ab47ef6d38cff9cae344f665efbd781ff525447aed08e0995a",
+      "size_bytes": 2669
+    },
+    {
+      "path": "reproducibility/scripts/review_llm_prompts.py",
+      "sha256": "302f1f6712411b0bbb72fd8d7df999dcd2e6fed1e2589e2da41bc5fa17a43d15",
+      "size_bytes": 2561
+    },
+    {
+      "path": "verification.json",
+      "sha256": "85a5641531bd6dc384685bb9a8acb7863bd711dba6d870ceac01cff4a00d9b0e",
+      "size_bytes": 3456
+    }
+  ],
+  "fingerprints": {
+    "finalist_contract": "7fe5f2e9f2be5fd7b6f2fb2c2b5829ea796c479d364a60e002754423455f5241",
+    "finalist_human_review": "e3f44316b3643ef36084b8a60baa39019935f423db5b6aae5383aed0fe96b703",
+    "parent_contract": "74c123e1b442a33c3628f0ad5207fc12fe3687847225f8a4962db571761fe271",
+    "primary_human_review": "a584db1c9c35aaaa628201c1cfe4e6c81c6308e1fd8252d1d94557db69dec0a0"
+  },
+  "generated_evidence_source_root": "artifacts/llm_evaluation/v1/gpt-5-mini",
+  "name": "Pliris Phase 6 LLM Evaluation Evidence",
+  "package_fingerprint": "10b6bbfff3ceb41e6c07a8e47fbe16b6144af0475eae80fb9f14baa03052d7be",
+  "source_branch": "feature-llm-evaluation",
+  "source_commit": "12746341b9f8dee7970b121806595813463c152d",
+  "version": 1
+}

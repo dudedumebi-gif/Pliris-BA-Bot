@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "name": "Pliris Phase 6 LLM Evaluation Contract",
+  "benchmark_path": "data/evaluation/llm_generation_benchmark.json",
+  "prompt_variants_path": "data/evaluation/llm_prompt_variants.json",
+  "variant_ids": [
+    "production_baseline_v1",
+    "evidence_first_v1",
+    "decision_ready_v1"
+  ],
+  "model": "gpt-5-mini",
+  "generation": {
+    "max_output_tokens": 2400,
+    "reasoning_effort": "low",
+    "store": false
+  },
+  "retrieval": {
+    "top_k": 5,
+    "reuse_context_across_variants": true
+  },
+  "primary_repetitions": 1,
+  "finalist_count": 2,
+  "finalist_confirmation_repetitions": 1,
+  "scoring_dimensions": [
+    {
+      "id": "groundedness",
+      "weight": 0.25,
+      "scale_min": 0,
+      "scale_max": 4
+    },
+    {
+      "id": "citation_quality",
+      "weight": 0.2,
+      "scale_min": 0,
+      "scale_max": 4
+    },
+    {
+      "id": "mode_fulfillment",
+      "weight": 0.2,
+      "scale_min": 0,
+      "scale_max": 4
+    },
+    {
+      "id": "completeness",
+      "weight": 0.15,
+      "scale_min": 0,
+      "scale_max": 4
+    },
+    {
+      "id": "relevance_clarity",
+      "weight": 0.1,
+      "scale_min": 0,
+      "scale_max": 4
+    },
+    {
+      "id": "uncertainty_handling",
+      "weight": 0.1,
+      "scale_min": 0,
+      "scale_max": 4
+    }
+  ],
+  "thresholds": {
+    "automated_weighted_score_min": 3.2,
+    "human_weighted_score_min": 3.2,
+    "critical_failure_rate_max": 0.05,
+    "unknown_citation_count_max": 0,
+    "citation_validation_required": true,
+    "exact_insufficient_evidence_required": true
+  },
+  "budget": {
+    "max_primary_live_calls": 36,
+    "max_total_live_calls": 60,
+    "max_total_input_tokens": 750000,
+    "max_total_output_tokens": 144000,
+    "max_estimated_cost_usd": 10.0,
+    "stop_on_budget_exceeded": true,
+    "pricing_rates_source": "runtime configuration"
+  },
+  "outputs": {
+    "root": "artifacts/llm_evaluation/v1/gpt-5-mini",
+    "frozen_contexts_jsonl": "frozen_contexts.jsonl",
+    "raw_outputs_jsonl": "primary/raw_outputs.jsonl",
+    "automated_scores_csv": "primary/automated_scores.csv",
+    "automated_summary_json": "primary/summary.json",
+    "automated_summary_md": "primary/summary.md",
+    "blinded_review_csv": "human_review/blinded_responses.csv",
+    "blinding_key_json": "human_review/blinding_key.json",
+    "human_scores_csv": "human_review/scores.csv",
+    "decision_record_md": "decision/production_prompt_selection.md"
+  }
+}

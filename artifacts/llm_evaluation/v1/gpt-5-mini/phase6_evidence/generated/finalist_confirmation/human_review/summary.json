@@ -1,0 +1,50 @@
+{
+  "attempts_reviewed": 24,
+  "finalist_contract_fingerprint": "7fe5f2e9f2be5fd7b6f2fb2c2b5829ea796c479d364a60e002754423455f5241",
+  "generated_at_utc": "2026-07-22T01:25:08.806245+00:00",
+  "review_set_fingerprint": "e3f44316b3643ef36084b8a60baa39019935f423db5b6aae5383aed0fe96b703",
+  "reviewer_id": "Dums",
+  "selection_status": "diagnostic_review_complete",
+  "variants": [
+    {
+      "attempts_reviewed": 12,
+      "automated_gate_met": false,
+      "combined_gate_met": false,
+      "critical_failure_rate": 0.1667,
+      "dimension_means": {
+        "citation_quality": 3.3333,
+        "completeness": 3.3333,
+        "groundedness": 3.3333,
+        "mode_fulfillment": 3.0833,
+        "relevance_clarity": 3.0833,
+        "uncertainty_handling": 3.3333
+      },
+      "human_gate_met": false,
+      "human_pass_rate": 0.8333,
+      "mean_weighted_score": 3.2583,
+      "response_contract_failures": 2,
+      "reviewer_critical_failures": 2,
+      "variant_id": "decision_ready_hardened_v1"
+    },
+    {
+      "attempts_reviewed": 12,
+      "automated_gate_met": false,
+      "combined_gate_met": false,
+      "critical_failure_rate": 0.0833,
+      "dimension_means": {
+        "citation_quality": 3.6667,
+        "completeness": 3.5833,
+        "groundedness": 3.6667,
+        "mode_fulfillment": 3.6667,
+        "relevance_clarity": 3.5833,
+        "uncertainty_handling": 3.5
+      },
+      "human_gate_met": false,
+      "human_pass_rate": 0.9167,
+      "mean_weighted_score": 3.6292,
+      "response_contract_failures": 1,
+      "reviewer_critical_failures": 1,
+      "variant_id": "production_baseline_v1"
+    }
+  ]
+}

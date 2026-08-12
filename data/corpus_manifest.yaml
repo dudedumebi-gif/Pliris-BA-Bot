@@ -16,3 +16,21 @@ documents:
         - business-analysis
         - business-systems-analysis
       notes: Private knowledge-base source. Do not commit the PDF to GitHub.
+
+  - document_id: gao-agile-assessment-guide-2023
+    title: GAO Agile Assessment Guide - Best Practices for Adoption and Implementation
+    source_filename: GAO_Agile_Assessment_Guide_2023.pdf
+    author: U.S. Government Accountability Office
+    edition: Reissued with revisions December 2023
+    publication_year: 2023
+    source_type: government-guide
+    access: public
+    include_in_public_repository: false
+    enabled: true
+    metadata:
+      short_title: GAO Agile Assessment Guide
+      domain:
+        - project-management
+        - agile-delivery
+        - business-systems-analysis
+      notes: Official publicly released source. Keep the PDF outside Git.

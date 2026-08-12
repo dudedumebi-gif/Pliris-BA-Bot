@@ -54,8 +54,21 @@ class Settings(BaseSettings):
         "Please ask a question related to one of these areas."
     )
 
+    guest_ui_shared_secret: SecretStr | None = None
+    developer_ui_access_key: SecretStr | None = None
+    guest_request_window_seconds: int = Field(default=60, ge=1, le=3600)
+    guest_requests_per_window: int = Field(default=5, ge=1, le=100)
+    guest_max_requests_per_session: int = Field(default=40, ge=1, le=1000)
+    guest_session_retention_seconds: int = Field(default=86400, ge=60, le=604800)
+
     private_document_directory: Path = Path("data/private")
     corpus_manifest_path: Path = Path("data/corpus_manifest.yaml")
+    pdf_staging_max_bytes: int = Field(
+        default=32 * 1024 * 1024,
+        ge=1024 * 1024,
+        le=100 * 1024 * 1024,
+        multiple_of=1024 * 1024,
+    )
     chunk_size_tokens: int = Field(default=700, ge=100, le=4000)
     chunk_overlap_tokens: int = Field(default=100, ge=0, le=1000)
 
@@ -89,7 +102,30 @@ class Settings(BaseSettings):
     def validate_non_empty_secret(cls, value: SecretStr) -> SecretStr:
         if not value.get_secret_value().strip():
             raise ValueError("Required secret values cannot be empty.")
+        return value
 
+    @field_validator("guest_ui_shared_secret")
+    @classmethod
+    def validate_optional_guest_secret(
+        cls,
+        value: SecretStr | None,
+    ) -> SecretStr | None:
+        if value is None:
+            return None
+        if not value.get_secret_value().strip():
+            raise ValueError("GUEST_UI_SHARED_SECRET cannot be empty when configured.")
+        return value
+
+    @field_validator("developer_ui_access_key")
+    @classmethod
+    def validate_optional_developer_key(
+        cls,
+        value: SecretStr | None,
+    ) -> SecretStr | None:
+        if value is None:
+            return None
+        if not value.get_secret_value().strip():
+            raise ValueError("DEVELOPER_UI_ACCESS_KEY cannot be empty when configured.")
         return value
 
     @field_validator("supabase_db_url")
@@ -123,6 +159,19 @@ class Settings(BaseSettings):
                 "Set OPENAI_EMBEDDING_DIMENSIONS=1536."
             )
 
+        if self.guest_max_requests_per_session < self.guest_requests_per_window:
+            raise ValueError(
+                "GUEST_MAX_REQUESTS_PER_SESSION must be at least GUEST_REQUESTS_PER_WINDOW."
+            )
+
+        if self.guest_session_retention_seconds < self.guest_request_window_seconds:
+            raise ValueError(
+                "GUEST_SESSION_RETENTION_SECONDS must be at least GUEST_REQUEST_WINDOW_SECONDS."
+            )
+
+        if self.app_env == "production" and self.guest_ui_shared_secret is None:
+            raise ValueError("GUEST_UI_SHARED_SECRET is required when APP_ENV=production.")
+
         return self
 
     @property
@@ -133,6 +182,7 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     """Return one validated Settings instance for the current process."""
+
     return Settings()
 
 
