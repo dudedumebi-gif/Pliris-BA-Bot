@@ -1,0 +1,186 @@
+name: Security audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  codeql:
+    name: CodeQL (Python)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        with:
+          languages: python
+          build-mode: none
+          queries: security-extended
+
+      - name: Analyze Python
+        uses: github/codeql-action/analyze@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        with:
+          category: /language:python
+          output: artifacts/security/codeql
+
+      - name: Retain CodeQL SARIF
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codeql-python-${{ github.sha }}
+          path: artifacts/security/codeql
+          if-no-files-found: warn
+          retention-days: 30
+
+  cve-audit:
+    name: Trivy filesystem and final image
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write
+    env:
+      IMAGE_REF: pliris-ba-bot:${{ github.sha }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@ae62891fec2bb8e7d6c99fc78c9fec3a63790f8d # v10.0.0
+        with:
+          version: "0.11.30"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Set up Trivy
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+        with:
+          version: v0.72.0
+          cache: true
+
+      - name: Prepare audit directory
+        run: mkdir -p artifacts/security
+
+      - name: Scan repository to JSON
+        run: >-
+          trivy filesystem --include-dev-deps --scanners vuln,misconfig,secret
+          --format json --output artifacts/security/filesystem.json .
+
+      - name: Record scanner and database version
+        run: trivy --version | tee artifacts/security/trivy-version.txt
+
+      - name: Scan repository to SARIF
+        run: >-
+          trivy filesystem --include-dev-deps --scanners vuln,misconfig,secret
+          --format sarif --output artifacts/security/filesystem.sarif .
+
+      - name: Create repository SBOM
+        run: >-
+          trivy filesystem --include-dev-deps --scanners vuln
+          --format cyclonedx --output artifacts/security/filesystem.cdx.json .
+
+      - name: Build release-candidate image
+        run: >-
+          docker build
+          --label org.opencontainers.image.revision=${{ github.sha }}
+          --tag "${IMAGE_REF}" .
+
+      - name: Record image identity
+        run: docker image inspect --format '{{.Id}}' "${IMAGE_REF}" | tee artifacts/security/image-id.txt
+
+      - name: Smoke-test final image
+        env:
+          APP_ENV: test
+          OPENAI_API_KEY: ci-placeholder
+          SUPABASE_URL: https://ci-placeholder.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: ci-placeholder
+          SUPABASE_SECRET_KEY: ci-placeholder
+          SUPABASE_DB_URL: postgresql://postgres:postgres@localhost:5432/pliris
+          GUEST_UI_SHARED_SECRET: ci-placeholder-guest-secret
+          DEVELOPER_UI_ACCESS_KEY: ci-placeholder-developer-key
+        run: |
+          docker run --detach --rm --name pliris-security-smoke --publish 10000:10000 \
+            --env APP_ENV --env OPENAI_API_KEY --env SUPABASE_URL \
+            --env SUPABASE_PUBLISHABLE_KEY --env SUPABASE_SECRET_KEY \
+            --env SUPABASE_DB_URL --env GUEST_UI_SHARED_SECRET \
+            --env DEVELOPER_UI_ACCESS_KEY "${IMAGE_REF}"
+          trap 'docker stop pliris-security-smoke >/dev/null 2>&1 || true' EXIT
+          for attempt in {1..60}; do
+            if curl --fail --silent http://localhost:10000/_stcore/health >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs pliris-security-smoke
+          exit 1
+
+      - name: Scan final image to JSON
+        run: >-
+          trivy image --scanners vuln
+          --format json --output artifacts/security/image.json "${IMAGE_REF}"
+
+      - name: Scan final image to SARIF
+        run: >-
+          trivy image --scanners vuln
+          --format sarif --output artifacts/security/image.sarif "${IMAGE_REF}"
+
+      - name: Create image SBOM
+        run: >-
+          trivy image --scanners vuln
+          --format cyclonedx --output artifacts/security/image.cdx.json "${IMAGE_REF}"
+
+      - name: Build audit summary
+        run: >-
+          uv run python -m scripts.security_report
+          --commit "${{ github.sha }}"
+          --image-ref "${IMAGE_REF}"
+          --image-id-file artifacts/security/image-id.txt
+          --trivy-version-file artifacts/security/trivy-version.txt
+          --filesystem-report artifacts/security/filesystem.json
+          --image-report artifacts/security/image.json
+          --output artifacts/security/SECURITY_AUDIT.md
+
+      - name: Publish audit in job summary
+        run: cat artifacts/security/SECURITY_AUDIT.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Trivy SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        with:
+          sarif_file: artifacts/security
+          category: trivy
+
+      - name: Retain complete security evidence
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: security-audit-${{ github.sha }}
+          path: artifacts/security
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Enforce fixable High and Critical release gate
+        run: >-
+          uv run python -m scripts.security_report
+          --filesystem-report artifacts/security/filesystem.json
+          --image-report artifacts/security/image.json
+          --fail-on-fixable-high-critical

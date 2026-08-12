@@ -9,43 +9,43 @@ authors = [
     { name = "Dumebi Nkwo" }
 ]
 dependencies = [
-    "fastapi[standard]>=0.139.0,<1.0.0",
-    "httpx>=0.28.1",
-    "openai>=2.45.0,<3.0.0",
-    "psycopg[binary,pool]>=3.3.4,<4.0.0",
-    "pydantic>=2.11.0,<3.0.0",
-    "pydantic-settings>=2.10.0,<3.0.0",
+    "fastapi[standard]==0.139.0",
+    "httpx==0.28.1",
+    "openai==2.45.0",
+    "psycopg[binary,pool]==3.3.4",
+    "pydantic==2.13.4",
+    "pydantic-settings==2.14.2",
     "pymupdf==1.28.0",
-    "python-dotenv>=1.2.2,<2.0.0",
-    "rank-bm25>=0.2.2",
+    "python-dotenv==1.2.2",
+    "rank-bm25==0.2.2",
     "streamlit==1.59.2",
-    "supabase>=2.31.0,<3.0.0",
-    "tenacity>=9.1.0,<10.0.0",
+    "supabase==2.31.0",
+    "tenacity==9.1.4",
     "tiktoken==0.13.0",
 ]
 
 [project.optional-dependencies]
 ingestion = [
-    "pymupdf>=1.26.0,<2.0.0",
-    "pyyaml>=6.0.2,<7.0.0",
-    "tiktoken>=0.11.0,<1.0.0",
+    "pymupdf==1.28.0",
+    "pyyaml==6.0.3",
+    "tiktoken==0.13.0",
 ]
 reranking = [
-    "sentence-transformers>=5.5.0,<6.0.0",
+    "sentence-transformers==5.6.0",
 ]
 ui = [
-    "pandas>=3.0.0,<4.0.0",
-    "streamlit>=1.58.0,<2.0.0",
+    "pandas==3.0.3",
+    "streamlit==1.59.2",
 ]
 evaluation = [
-    "pandas>=3.0.0,<4.0.0",
-    "tqdm>=4.67.0,<5.0.0",
+    "pandas==3.0.3",
+    "tqdm==4.68.4",
 ]
 dev = [
-    "mypy>=1.17.0,<2.0.0",
-    "pytest>=8.4.0,<9.0.0",
-    "pytest-cov>=6.2.0,<7.0.0",
-    "ruff>=0.12.0,<1.0.0",
+    "mypy==1.20.2",
+    "pytest==9.0.3",
+    "pytest-cov==6.3.0",
+    "ruff==0.15.21",
 ]
 
 [tool.uv]
@@ -54,12 +54,12 @@ link-mode = "copy"
 
 [dependency-groups]
 dev = [
-    "httpx2>=2.7.0",
-    "mypy>=1.17.0,<2.0.0",
-    "pytest>=8.4.0,<9.0.0",
-    "pytest-asyncio>=1.4.0",
-    "pytest-cov>=6.2.0,<7.0.0",
-    "ruff>=0.12.0,<1.0.0",
+    "httpx2==2.7.0",
+    "mypy==1.20.2",
+    "pytest==9.0.3",
+    "pytest-asyncio==1.4.0",
+    "pytest-cov==6.3.0",
+    "ruff==0.15.21",
 ]
 evaluation = [
     "sentence-transformers==5.6.0",

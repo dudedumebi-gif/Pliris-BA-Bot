@@ -1,4 +1,4 @@
-.PHONY: install lock verify-env check-supabase test test-integration lint format api
+.PHONY: install lock verify-env check-supabase test test-integration lint format api compose-up compose-down security-report
 
 install:
 	uv sync --all-extras
@@ -27,3 +27,12 @@ format:
 
 api:
 	uv run fastapi dev api/main.py
+
+compose-up:
+	docker compose --profile developer up --build --wait
+
+compose-down:
+	docker compose --profile developer down
+
+security-report:
+	uv run python -m scripts.security_report --help

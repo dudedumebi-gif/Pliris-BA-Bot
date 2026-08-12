@@ -17,6 +17,7 @@ venv/
 data/private/*
 !data/private/.gitkeep
 *.pdf
+!data/sample/*.pdf
 
 # Generated outputs
 logs/*
@@ -53,3 +54,6 @@ artifacts/retrieval_evaluation/*
 # LLM evaluation artifacts
 artifacts/llm_evaluation/*
 !artifacts/llm_evaluation/.gitkeep
+
+# Generated security evidence (retained by CI, never committed)
+artifacts/security/

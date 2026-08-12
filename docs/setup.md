@@ -1,221 +1,76 @@
-# Setup Guide
+# Setup and clean-machine reproduction
 
-## Prerequisites
+## Requirements
 
-- Python 3.11 or higher
-- Docker and Docker Compose (for production deployment)
-- Supabase account and project
+- Git
+- Docker Desktop or Docker Engine with Compose v2
 - OpenAI API key
+- Supabase project with Postgres, Data API, and Storage
+- Optional local workflow: Python 3.12 and uv 0.11.30
 
-## Installation
+## Configure hosted services
 
-### 1. Clone the Repository
+Create a Supabase project and apply the SQL files in `supabase/migrations/` in filename order. Create
+the private Storage bucket named by `SUPABASE_STORAGE_BUCKET`. Copy `.env.example` to `.env` and
+replace every placeholder. The current names are `SUPABASE_PUBLISHABLE_KEY`,
+`SUPABASE_SECRET_KEY`, `SUPABASE_DB_URL`, `OPENAI_API_KEY`, `GUEST_UI_SHARED_SECRET`, and
+`DEVELOPER_UI_ACCESS_KEY`.
 
-```bash
-git clone <repository-url>
-cd pliris-ba-bot
-```
+Do not put credentials in screenshots, reports, committed files, browser URLs, or client-side code.
 
-### 2. Create Virtual Environment
+## Reproduce with Docker Compose
 
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-### 3. Install Dependencies
-
-```bash
-make install
-# or
-pip install -e ".[dev]"
-```
-
-### 4. Configure Environment
+From a clean checkout:
 
 ```bash
 cp .env.example .env
+# Configure .env.
+docker compose config --quiet
+docker compose --profile developer up --build --wait
+docker compose ps
+curl --fail http://localhost:8000/health/live
+curl --fail http://localhost:8000/health/ready
 ```
 
-Edit `.env` with your configuration:
+| Service | Port | Purpose |
+|---|---:|---|
+| `api` | 8000 | FastAPI and OpenAPI docs |
+| `streamlit` | 8501 | Public chat only |
+| `streamlit-developer` | 8502 | Protected developer workspace |
 
-```env
-# Supabase
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-SUPABASE_ANON_KEY=your_supabase_anon_key
+Compose waits for the API health check before starting either UI. Containers run as the non-root
+`pliris` user with dropped Linux capabilities and `no-new-privileges`.
 
-# OpenAI
-OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=gpt-4o
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-
-# Database
-DATABASE_URL=postgresql://postgres:password@localhost:5432/pliris
-```
-
-### 5. Set Up Database
-
-#### Option A: Using Supabase Dashboard
-
-1. Go to your Supabase project dashboard
-2. Navigate to SQL Editor
-3. Run the migration file: `supabase/migrations/202607120001_initial_pliris_schema.sql`
-4. Run the seed file: `supabase/seed.sql`
-
-#### Option B: Using Script
+## Reproduce the quality gate locally
 
 ```bash
-make db-setup
-# or
-python scripts/check_supabase.py
+uv sync --frozen
+uv run ruff format --check .
+uv run ruff check .
+uv run pytest -q -m "not integration"
+uv run python -m scripts.verify_environment
 ```
 
-### 6. Verify Environment
+Integration tests require configured hosted services and are intentionally excluded from offline CI:
 
 ```bash
-python scripts/verify_environment.py
+uv run pytest -q -m integration
 ```
 
-## Running the Application
-
-### Development Mode
+## Reproduce the public corpus
 
 ```bash
-make dev
+uv run python -m scripts.build_sample_corpus
+cp data/sample/Pliris_Public_BA_Primer.pdf data/private/
+uv run python -m scripts.ingest_document --document-id pliris-public-ba-primer --dry-run
 ```
 
-This starts:
-- FastAPI backend on http://localhost:8000
-- Streamlit UI on http://localhost:8501
-
-### Production Mode
-
-```bash
-make prod
-```
-
-This starts Docker containers for:
-- API server
-- Streamlit UI
-- PostgreSQL database
-
-### Individual Components
-
-#### Start API only
-
-```bash
-uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-#### Start Streamlit only
-
-```bash
-streamlit run app/Home.py --server.address 0.0.0.0 --server.port 8501
-```
-
-## Document Ingestion
-
-### Ingest a Single Document
-
-```bash
-python scripts/ingest_documents.py path/to/document.pdf
-```
-
-### Ingest a Directory
-
-```bash
-python scripts/ingest_documents.py path/to/documents/
-```
-
-### Using the Ingestion Pipeline Directly
-
-```bash
-python -m ingestion.run path/to/document.pdf
-```
-
-## Testing
-
-### Run All Tests
-
-```bash
-make test
-# or
-pytest tests/
-```
-
-### Run Unit Tests Only
-
-```bash
-pytest tests/unit/
-```
-
-### Run Integration Tests Only
-
-```bash
-pytest tests/integration/
-```
-
-### Run with Coverage
-
-```bash
-pytest --cov=pliris --cov=api --cov=app
-```
-
-## Code Quality
-
-### Linting
-
-```bash
-make lint
-# or
-ruff check .
-mypy pliris api app
-```
-
-### Formatting
-
-```bash
-make format
-# or
-black .
-ruff check --fix .
-```
+Do not copy or commit private source material into `data/sample`.
 
 ## Troubleshooting
 
-### Database Connection Issues
-
-1. Verify DATABASE_URL in `.env`
-2. Check Supabase project status
-3. Run `python scripts/check_supabase.py`
-
-### OpenAI API Issues
-
-1. Verify OPENAI_API_KEY in `.env`
-2. Check API key has sufficient credits
-3. Verify model availability in your region
-
-### Import Errors
-
-1. Ensure virtual environment is activated
-2. Reinstall dependencies: `pip install -e .`
-3. Check Python version (3.11+)
-
-### Port Already in Use
-
-Change ports in `.env`:
-```env
-API_PORT=8001
-STREAMLIT_PORT=8502
-```
-
-## Next Steps
-
-1. Ingest your documents
-2. Test the chat interface
-3. Run evaluation scripts
-4. Configure monitoring
-5. Set up production deployment
-
-See [Usage Guide](usage.md) for more information on using the application.
+- Import errors: run from the repository root using `uv run`, not from a patch directory.
+- Readiness 503: confirm Supabase URLs, keys, database URL, and migrations.
+- Developer UI denied: use the value of `DEVELOPER_UI_ACCESS_KEY` at `localhost:8502`.
+- Port conflict: stop the existing process or change the left side of the port mapping in Compose.
+- Reset: `docker compose --profile developer down`; add `--volumes` only when intentional.
