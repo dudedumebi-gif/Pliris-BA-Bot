@@ -21,9 +21,7 @@ def _message(*, assistant_message_id: str | None = None) -> dict:
 def test_response_feedback_target_uses_response_identity() -> None:
     assistant_message_id = str(uuid4())
 
-    target = response_feedback_target(
-        _message(assistant_message_id=assistant_message_id)
-    )
+    target = response_feedback_target(_message(assistant_message_id=assistant_message_id))
 
     assert target is not None
     assert target.conversation_id == "conversation-token"
@@ -58,9 +56,7 @@ def test_feedback_state_key_is_response_isolated() -> None:
 def test_chat_page_renders_feedback_for_history_and_new_reply() -> None:
     source = Path("app/pages/1_Chat.py").read_text(encoding="utf-8")
     chat_component = Path("app/components/chat_message.py").read_text(encoding="utf-8")
-    feedback_component = Path("app/components/response_feedback.py").read_text(
-        encoding="utf-8"
-    )
+    feedback_component = Path("app/components/response_feedback.py").read_text(encoding="utf-8")
 
     assert "FeedbackClient(settings)" in source
     assert source.count("render_response_feedback(") == 2

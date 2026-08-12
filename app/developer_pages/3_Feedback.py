@@ -105,15 +105,11 @@ for item in page.items:
         st.write(item["assistant_message"])
 
         details = st.columns(3)
-        details[0].markdown(
-            f"**Citation helpful:** {boolean_label(item.get('citation_helpful'))}"
-        )
+        details[0].markdown(f"**Citation helpful:** {boolean_label(item.get('citation_helpful'))}")
         details[1].markdown(
             f"**Scope correct:** {boolean_label(item.get('scope_decision_correct'))}"
         )
-        details[2].markdown(
-            f"**Submitted:** {format_timestamp(item.get('created_at'))}"
-        )
+        details[2].markdown(f"**Submitted:** {format_timestamp(item.get('created_at'))}")
 
         comment = item.get("comment")
         if isinstance(comment, str) and comment.strip():

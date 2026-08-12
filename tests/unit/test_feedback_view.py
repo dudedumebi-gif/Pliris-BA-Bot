@@ -17,9 +17,7 @@ def test_feedback_view_formats_rates_and_timestamps() -> None:
 def test_feedback_view_builds_safe_compact_labels() -> None:
     assert feedback_excerpt("  A   useful response.  ") == "A useful response."
     assert feedback_excerpt("x" * 200, limit=20).endswith("…")
-    assert feedback_label({"rating": 1, "assistant_message": "Answer"}) == (
-        "Helpful · Answer"
-    )
+    assert feedback_label({"rating": 1, "assistant_message": "Answer"}) == ("Helpful · Answer")
     assert boolean_label(True) == "Yes"
     assert boolean_label(False) == "No"
     assert boolean_label(None) == "Not rated"

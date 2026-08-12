@@ -419,25 +419,13 @@ class GroundedPersistenceRepository:
                 "model_name": exchange.model_name,
                 "input_tokens": exchange.input_tokens,
                 "output_tokens": exchange.output_tokens,
-                "total_latency_ms": self._milliseconds(
-                    exchange.total_latency_ms
-                ),
-                "retrieval_latency_ms": self._milliseconds(
-                    exchange.retrieval_latency_ms
-                ),
+                "total_latency_ms": self._milliseconds(exchange.total_latency_ms),
+                "retrieval_latency_ms": self._milliseconds(exchange.retrieval_latency_ms),
                 "retrieved_count": exchange.metadata.get("retrieved_count"),
-                "context_source_count": exchange.metadata.get(
-                    "context_source_count"
-                ),
-                "context_character_count": exchange.metadata.get(
-                    "context_character_count"
-                ),
-                "context_truncated": exchange.metadata.get(
-                    "context_truncated"
-                ),
-                "context_omitted_count": exchange.metadata.get(
-                    "context_omitted_count"
-                ),
+                "context_source_count": exchange.metadata.get("context_source_count"),
+                "context_character_count": exchange.metadata.get("context_character_count"),
+                "context_truncated": exchange.metadata.get("context_truncated"),
+                "context_omitted_count": exchange.metadata.get("context_omitted_count"),
                 "insufficient_evidence": exchange.insufficient_evidence,
                 "retrieval_result_count": retrieval_result_count,
                 "selected_context_count": len(exchange.selected_chunk_ids),

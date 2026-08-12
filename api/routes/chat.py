@@ -199,9 +199,7 @@ async def chat(
     try:
         if prompt_injection_detector.detect(request.message):
             if event_logger is not None:
-                await event_logger.log_prompt_injection(
-                    message_length=len(request.message)
-                )
+                await event_logger.log_prompt_injection(message_length=len(request.message))
             logger.warning(
                 "Prompt injection detected from user %s",
                 user["id"],
@@ -345,9 +343,7 @@ async def chat(
 
         result = await orchestrator.process_query(**pipeline_arguments)
         result_data = result.to_dict()
-        assistant_message_id = _persisted_assistant_message_id(
-            result_data.get("metadata")
-        )
+        assistant_message_id = _persisted_assistant_message_id(result_data.get("metadata"))
         if session_id is not None and assistant_message_id is None:
             raise RuntimeError("Successful chat response was not persisted.")
 

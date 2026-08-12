@@ -162,9 +162,7 @@ class FakePipelineResult:
                     "retrieved_count": 0,
                     "persistence": {
                         "status": "completed",
-                        "assistant_message_id": (
-                            "00000000-0000-0000-0000-000000000013"
-                        ),
+                        "assistant_message_id": ("00000000-0000-0000-0000-000000000013"),
                     },
                 },
             }
@@ -204,9 +202,7 @@ class FakePipelineResult:
                 "persistence": {
                     "status": "completed",
                     "database_conversation_id": "db-conv",
-                    "assistant_message_id": (
-                        "00000000-0000-0000-0000-000000000014"
-                    ),
+                    "assistant_message_id": ("00000000-0000-0000-0000-000000000014"),
                 },
             },
         }
@@ -312,9 +308,7 @@ async def test_chat_preserves_exact_out_of_scope_response() -> None:
     assert response.citations == []
     assert response.confidence == 0.0
     assert response.scope == "out_of_scope"
-    assert str(response.assistant_message_id) == (
-        "00000000-0000-0000-0000-000000000012"
-    )
+    assert str(response.assistant_message_id) == ("00000000-0000-0000-0000-000000000012")
     assert response.metadata["guardrail"] == "out_of_scope"
     assert response.metadata["persistence"]["status"] == "completed"
     assert turn_repository.calls[0]["scope_status"] == "out_of_scope"
@@ -353,9 +347,7 @@ async def test_chat_blocks_prompt_injection_before_scope_check() -> None:
     assert error.value.detail == ("Potential prompt injection detected")
     assert scope.messages == []
     assert request_classifier.messages == []
-    assert event_logger.calls == [
-        ("prompt_injection", {"message_length": 29})
-    ]
+    assert event_logger.calls == [("prompt_injection", {"message_length": 29})]
 
 
 @pytest.mark.asyncio
@@ -433,9 +425,7 @@ def build_test_client(
     app.dependency_overrides[get_scope_classifier] = lambda: scope_classifier
     app.dependency_overrides[get_request_classifier] = lambda: request_classifier
     app.dependency_overrides[get_prompt_injection_detector] = lambda: detector
-    app.dependency_overrides[get_event_logger] = lambda: (
-        event_logger or FakeEventLogger()
-    )
+    app.dependency_overrides[get_event_logger] = lambda: event_logger or FakeEventLogger()
     return TestClient(app)
 
 

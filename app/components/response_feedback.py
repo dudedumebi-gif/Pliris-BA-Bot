@@ -21,9 +21,7 @@ def render_response_feedback(
     message_content = message.get("content")
     if target is None:
         if isinstance(message_content, str):
-            fallback_key = (
-                f"assistant-unrated:{message.get('conversation_id')}:{message_content}"
-            )
+            fallback_key = f"assistant-unrated:{message.get('conversation_id')}:{message_content}"
             render_copy_action(
                 message_content,
                 key=fallback_key,

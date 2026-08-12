@@ -40,9 +40,7 @@ class FakeTurnRepository:
     def __init__(self) -> None:
         self.calls: list[dict[str, object]] = []
 
-    async def persist_turn(
-        self, **kwargs: object
-    ) -> ConversationTurnOutcome:
+    async def persist_turn(self, **kwargs: object) -> ConversationTurnOutcome:
         self.calls.append(kwargs)
         return ConversationTurnOutcome(
             client_session_id=str(kwargs["client_session_id"]),

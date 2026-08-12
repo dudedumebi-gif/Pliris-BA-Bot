@@ -61,6 +61,7 @@ async def get_monitoring_dashboard(
             detail="Failed to fetch monitoring dashboard.",
         ) from exc
 
+
 @router.get(
     "/events",
     response_model=MonitoringEventListResponse,

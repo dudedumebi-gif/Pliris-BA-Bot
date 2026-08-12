@@ -188,7 +188,6 @@ class MonitoringRepository:
             items.append(item)
         return items, total
 
-
     async def get_dashboard(self, *, since_hours: int = 24) -> dict[str, Any]:
         """Return aggregate-only monitoring metrics for a bounded time window."""
 
@@ -264,9 +263,7 @@ class MonitoringRepository:
             "prompt_injection_blocks",
             "feedback_submissions",
         )
-        normalized_summary = {
-            field: int(summary.get(field) or 0) for field in integer_fields
-        }
+        normalized_summary = {field: int(summary.get(field) or 0) for field in integer_fields}
         normalized_summary.update(
             {
                 "avg_latency_ms": _optional_float(summary.get("avg_latency_ms")),

@@ -108,9 +108,7 @@ def test_feedback_stats_returns_aggregate_counts() -> None:
     }
     connection = FakeConnection([{"one": expected}])
 
-    result = asyncio.run(
-        FeedbackRepository(connection_factory=lambda: connection).get_stats()
-    )
+    result = asyncio.run(FeedbackRepository(connection_factory=lambda: connection).get_stats())
 
     assert result == expected
     assert "filter" in connection.executions[0][0].lower()
