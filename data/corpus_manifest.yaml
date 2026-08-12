@@ -1,21 +1,28 @@
 version: 1
 documents:
+  - document_id: pliris-public-ba-primer
+    title: Pliris Public Business Analysis Primer
+    source_filename: Pliris_Public_BA_Primer.pdf
+    author: Pliris BA Bot project
+    edition: Phase 8 reproducibility sample
+    publication_year: 2026
+    source_type: project-guide
+    access: public
+    include_in_public_repository: true
+    enabled: true
+    metadata:
+      short_title: Public BA Primer
+      domain:
+        - business-analysis
+        - project-management
+      notes: Redistributable sample generated from data/sample/public_ba_primer.md.
+
   - document_id: babok-v3
     title: A Guide to the Business Analysis Body of Knowledge
     source_filename: BABOK_Guide_v3_Member.pdf
-    author: International Institute of Business Analysis
-    edition: Version 3
-    publication_year: 2015
-    source_type: book
     access: private
     include_in_public_repository: false
     enabled: true
-    metadata:
-      short_title: BABOK Guide v3
-      domain:
-        - business-analysis
-        - business-systems-analysis
-      notes: Private knowledge-base source. Do not commit the PDF to GitHub.
 
   - document_id: gao-agile-assessment-guide-2023
     title: GAO Agile Assessment Guide - Best Practices for Adoption and Implementation

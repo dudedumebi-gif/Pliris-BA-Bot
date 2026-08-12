@@ -1,133 +1,79 @@
 # Pliris BA Bot
 
-A Business Analyst AI assistant powered by RAG (Retrieval-Augmented Generation) with guardrails and monitoring capabilities.
+Pliris is a production-oriented, domain-restricted RAG assistant for Business Analysis, Business
+Systems Analysis, and Project Management. It combines grounded generation, hybrid retrieval,
+citations, scope and prompt-injection guardrails, feedback, and protected operational monitoring.
 
 ## Architecture
 
-This project uses a modern architecture with:
-- **Streamlit** for the user interface
-- **FastAPI** for the backend API
-- **Supabase** for database and storage
-- **OpenAI** for LLM and embeddings
-- **Hybrid search** (semantic + lexical) for retrieval
+- FastAPI backend with public liveness/readiness and protected diagnostics
+- Separate Streamlit public (`8501`) and developer (`8502`) interfaces
+- Supabase Postgres, vector search, Data API, and private object storage
+- OpenAI chat and embedding models
+- Hybrid lexical/vector retrieval with optional reranking
 
-## Project Structure
+See [architecture](docs/architecture.md) for component and request-flow details.
 
-```
-pliris-ba-bot/
-├── app/                    # Streamlit UI
-├── api/                    # FastAPI backend
-├── pliris/                 # Core application package
-├── ingestion/              # Document ingestion pipeline
-├── evaluation/             # Retrieval and LLM evaluation
-├── supabase/               # Database migrations and config
-├── data/                   # Data directories
-├── scripts/                # Utility scripts
-├── tests/                  # Unit and integration tests
-└── docs/                   # Documentation
-```
+## Quick start
 
-## Setup
-
-### Prerequisites
-
-- Python 3.11+
-- Docker and Docker Compose
-- Supabase account
-- OpenAI API key
-
-### Installation
-
-1. Clone the repository and navigate to the project directory
-2. Copy the example environment file:
-   ```bash
-   cp .env.example .env
-   ```
-3. Edit `.env` with your configuration values
-4. Install dependencies:
-   ```bash
-   make install
-   ```
-5. Set up the database:
-   ```bash
-   make db-setup
-   ```
-6. Run the application:
-   ```bash
-   make dev
-   ```
-
-## Usage
-
-### Starting the Application
-
-- **Development mode**: `make dev` (starts API and Streamlit)
-- **Production mode**: `make prod` (uses Docker Compose)
-
-### Guarded PDF Staging and Ingestion
-
-Documents must first be registered in `data/corpus_manifest.yaml`. The protected
-developer Sources workspace validates uploaded PDFs, rejects duplicate checksums,
-stores accepted files privately, and creates a non-retrievable `pending` record.
-
-Inspect extraction and chunking without database writes or embeddings:
+Prerequisites: Git, Docker Desktop with Compose v2, and credentials for OpenAI and Supabase.
 
 ```bash
-uv run python -m scripts.ingest_document \
-  --document-id MANIFEST_ID \
-  --dry-run
+git clone https://github.com/dudedumebi-gif/Pliris-BA-Bot.git
+cd Pliris-BA-Bot
+cp .env.example .env
+# Fill in .env; never commit it.
+docker compose --profile developer up --build --wait
 ```
 
-Ingest one exact staged document:
+Open the public chat at <http://localhost:8501>, the protected developer interface at
+<http://localhost:8502>, and API docs at <http://localhost:8000/docs>. Stop everything with:
 
 ```bash
-uv run python -m scripts.ingest_document \
-  --document-id MANIFEST_ID \
-  --staged-document-id DATABASE_DOCUMENT_UUID
+docker compose --profile developer down
 ```
 
-Replace `MANIFEST_ID` and `DATABASE_DOCUMENT_UUID` with real values before
-running these commands.
+For a local Python workflow, install Python 3.12 and uv 0.11.30, then run `uv sync --frozen`.
+The exact dependency graph is committed in `uv.lock`.
 
-The staged handoff verifies the document UUID, manifest ID, checksum, storage
-location, `pending` status, and absence of existing chunks before embedding.
-`--force` cannot be combined with `--staged-document-id`. A successfully
-indexed document is persisted with status `ready`.
-
-#### Phase 7 Step 2C Acceptance
-
-Commit `05b692f` completed the guarded staging-to-ingestion workflow. The
-controlled GAO Agile Assessment Guide acceptance processed 324 pages into
-204 fully embedded chunks with no ingestion error. The final document status
-was `ready`. BABOK (`babok-v3`) remained untouched.
-
-### Running Evaluations
+## Verify
 
 ```bash
-python evaluation/retrieval_eval.py
-python evaluation/llm_eval.py
-python evaluation/scope_eval.py
+uv sync --frozen
+uv run ruff format --check .
+uv run ruff check .
+uv run pytest -q -m "not integration"
+docker compose config --quiet
 ```
+
+Every pull request to `main` also runs CodeQL for Python and Trivy against the repository and final
+container image. The workflow retains JSON, SARIF, CycloneDX SBOMs, and a commit-addressed audit
+summary. See [security](docs/security.md).
+
+## Public sample corpus
+
+`data/sample/Pliris_Public_BA_Primer.pdf` is an original, redistributable document that lets a
+reviewer exercise PDF extraction and ingestion without the private BABOK corpus. Rebuild it with:
+
+```bash
+uv run python -m scripts.build_sample_corpus
+```
+
+Register or stage only documents declared in `data/corpus_manifest.yaml`. The protected developer
+Sources workspace validates uploads, rejects duplicates, stores accepted PDFs privately, and
+creates a pending record. See [ingestion](docs/ingestion.md).
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
-- [Setup](docs/setup.md)
-- [Usage](docs/usage.md)
-- [Ingestion](docs/ingestion.md)
+- [Setup and clean-machine reproduction](docs/setup.md)
+- [Usage and protected interfaces](docs/usage.md)
+- [Reviewer walkthrough](docs/walkthrough.md)
+- [Security and CVE evidence](docs/security.md)
 - [Evaluation](docs/evaluation.md)
 - [Monitoring](docs/monitoring.md)
-
-## Makefile Commands
-
-- `make install` - Install dependencies
-- `make dev` - Start development servers
-- `make prod` - Start production containers
-- `make db-setup` - Set up database
-- `make test` - Run tests
-- `make lint` - Run linting
-- `make format` - Format code
+- [Submission audit](docs/submission-audit.md)
 
 ## License
 
-MIT
+MIT. Private knowledge-base sources are excluded from the repository and are not covered by the
+software license.

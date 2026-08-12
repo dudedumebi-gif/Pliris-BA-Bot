@@ -21,10 +21,22 @@ services:
       - GUEST_REQUESTS_PER_WINDOW=${GUEST_REQUESTS_PER_WINDOW:-5}
       - GUEST_MAX_REQUESTS_PER_SESSION=${GUEST_MAX_REQUESTS_PER_SESSION:-40}
       - GUEST_SESSION_RETENTION_SECONDS=${GUEST_SESSION_RETENTION_SECONDS:-86400}
+    init: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     volumes:
       - ./logs:/app/logs
       - ./outputs:/app/outputs
-    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8000/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
 
   streamlit:
     build: .
@@ -37,10 +49,23 @@ services:
       - API_TIMEOUT_SECONDS=${API_TIMEOUT_SECONDS:-90}
       - PLIRIS_UI_MODE=public
       - GUEST_UI_SHARED_SECRET=${GUEST_UI_SHARED_SECRET}
+    init: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     volumes:
       - ./logs:/app/logs
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8501/_stcore/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
     command: streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 8501
 
   streamlit-developer:
@@ -56,8 +81,21 @@ services:
       - PLIRIS_UI_MODE=developer
       - GUEST_UI_SHARED_SECRET=${GUEST_UI_SHARED_SECRET}
       - DEVELOPER_UI_ACCESS_KEY=${DEVELOPER_UI_ACCESS_KEY}
+    init: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     volumes:
       - ./logs:/app/logs
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8501/_stcore/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
     command: streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 8501
